@@ -1,0 +1,310 @@
+---
+// --- IMPORTS ---
+// If you are using local assets, keep these. If not, you can remove them.
+import plmLogo from "../assets/PLMLogo.webp";
+import "../styles/global.css";
+import { Image } from "astro:assets";
+
+// --- MOCK DATA ---
+const facultyData = { firstName: "JUAN", lastName: "DELA CRUZ", facultyId: "FACULTY ID" };
+const mockStudents = [
+    { studentNo: "2025-0001", name: "BONIFACIO, JAMES CRAVEN C.", program: "BSCS" },
+    { studentNo: "2025-0002", name: "RIZAL, JOSE P.", program: "BSCS" },
+    { studentNo: "2025-0003", name: "LUNA, ANTONIO N.", program: "BSIT" },
+    { studentNo: "2025-0004", name: "MABINI, APOLINARIO M.", program: "BSCS" },
+    { studentNo: "2025-0005", name: "SILANG, GABRIELA", program: "BSIT" },
+    { studentNo: "2025-0006", name: "DEL PILAR, GREGORIO", program: "BSCS" },
+    { studentNo: "2025-0007", name: "JACINTO, EMILIO", program: "BSIT" },
+];
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLM Faculty Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 3. CUSTOM PLM COLORS */
+        :root {
+            --plm-navy: #1e1e2f;
+            --plm-red: #8B0000;
+            --plm-gold: #B8860B; /* Dark Goldenrod */
+            --plm-gold-hover: #9e7409;
+        }
+        body { font-family: 'Roboto', sans-serif; }
+        
+        .bg-plm-navy { background-color: var(--plm-navy); }
+        .text-plm-navy { color: var(--plm-navy); }
+        .bg-plm-red { background-color: var(--plm-red); }
+        .bg-plm-gold { background-color: var(--plm-gold); }
+        .border-plm-gold { border-color: var(--plm-gold); }
+        .text-plm-gold { color: var(--plm-gold); }
+        
+        /* Smooth Input Transition */
+        .grade-input { transition: all 0.2s ease-in-out; }
+        .grade-input:focus { outline: none; border-color: var(--plm-gold); box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.2); }
+    </style>
+</head>
+<body class="bg-white min-h-screen flex flex-col text-gray-800">
+
+    <header class="w-full bg-white shadow-sm z-50">
+        <div class="flex justify-center py-4">
+            <div class="w-15 h-15">
+                 <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+            </div>
+        </div>
+
+        <div class="h-5 w-full bg-plm-navy border-b-9 border-[#991B1B]"></div>
+        <nav class="border-y border-gray-200 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-12 text-sm font-medium text-gray-700">
+                <a href="/f2_classes" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Classes</a>
+                <a href="#" class="bg-[#987818] text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all">Grade</a>
+                <a href="/f4_personalinfo" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Personal Info</a>
+                <a href="/f5_change-password" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Change Password</a>
+            </div>
+        </nav>
+
+        <div class="bg-white border-b border-plm-gold/50 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+                <span class="text-gray-800">
+                    Signed in as: <span class="font-bold uppercase">{facultyData.lastName}, {facultyData.firstName} ({facultyData.facultyId})</span>
+                </span>
+                <button class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto p-8">
+        
+        <h1 class="text-center text-2xl font-bold text-plm-navy mb-10 uppercase tracking-wide">GRADE SUBMISSION</h1>
+
+        <div class="flex flex-wrap justify-center items-end gap-6 mb-10">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-plm-navy ml-1">School Year:</label>
+                <select id="school-year" class="border border-plm-gold text-sm rounded px-3 h-10 bg-white w-48 focus:outline-none focus:ring-1 focus:ring-plm-gold">
+                    <option value="2025-2026">2025-2026</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-plm-navy ml-1">Semester:</label>
+                <select id="semester" class="border border-plm-gold text-sm rounded px-3 h-10 bg-white w-48 focus:outline-none focus:ring-1 focus:ring-plm-gold">
+                    <option value="First Semester">First Semester</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-plm-navy ml-1">Course Code:</label>
+                <select id="course-code" class="border border-plm-gold text-sm rounded px-3 h-10 bg-white w-80 focus:outline-none focus:ring-1 focus:ring-plm-gold">
+                    <option value="" disabled selected>-- Select Course --</option>
+                    <option value="CS 111">CS 111 - Intro to Computing</option>
+                    <option value="CS 112">CS 112 - Computer Programming 1</option>
+                </select>
+            </div>
+
+            <button id="btn-confirm" class="bg-plm-gold hover:bg-yellow-700 text-white text-sm font-bold h-10 px-8 rounded shadow-md transition-colors cursor-pointer flex items-center justify-center">
+                Confirm
+            </button>
+        </div>
+
+        <div id="empty-state" class="text-center py-20 animate-pulse">
+             <p class="text-gray-500">Select filter options above and click <span class="font-bold text-plm-navy">Confirm</span> to view class list.</p>
+        </div>
+
+        <div id="edit-section" class="hidden w-full max-w-6xl mx-auto">
+            <div class="border border-plm-gold rounded-t overflow-hidden shadow-sm max-h-[60vh] overflow-y-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-plm-navy text-white uppercase text-xs font-bold sticky top-0 z-10 shadow-md">
+                        <tr>
+                            <th class="py-3 px-4 border-r border-white/20 w-12 text-center bg-plm-navy">#</th>
+                            <th class="py-3 px-4 border-r border-white/20 w-32 bg-plm-navy">Student No.</th>
+                            <th class="py-3 px-4 border-r border-white/20 bg-plm-navy">Student Name</th>
+                            <th class="py-3 px-4 border-r border-white/20 w-24 text-center bg-plm-navy">Program</th>
+                            <th class="py-3 px-4 border-r border-white/20 w-32 text-center bg-plm-navy">Final Grade</th>
+                            <th class="py-3 px-4 w-32 text-center bg-plm-navy">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-900 bg-white">
+                        {mockStudents.map((student, index) => (
+                            <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 text-center font-bold bg-plm-navy text-white border-r border-gray-200">{index + 1}</td>
+                                <td class="py-3 px-4 font-bold border-r border-gray-200">{student.studentNo}</td>
+                                <td class="py-3 px-4 font-bold text-plm-navy border-r border-gray-200 uppercase">{student.name}</td>
+                                <td class="py-3 px-4 text-center border-r border-gray-200">{student.program}</td>
+                                <td class="py-2 px-2 text-center border-r border-gray-200">
+                                    <input type="text" placeholder="--" class="grade-input w-20 text-center font-bold text-gray-800 border border-gray-300 rounded py-1" oninput="updateRemarks(this)" />
+                                </td>
+                                <td class="py-3 px-4 text-center font-bold text-xs uppercase remarks-cell text-gray-400">-</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-center gap-4 mt-8 mb-12">
+                <button id="btn-cancel" class="bg-white border border-red-700 text-red-700 hover:bg-red-50 text-sm font-bold py-2 px-8 rounded shadow-sm w-40 transition-colors">
+                    Cancel
+                </button>
+                <button id="btn-save" class="bg-plm-gold hover:bg-yellow-700 text-white text-sm font-bold py-2 px-8 rounded shadow-md w-40 transition-colors">
+                    Save
+                </button>
+            </div>
+            <p class="text-center text-xs text-gray-400 italic mt-[-20px] mb-8">* Ensure all grades are final before clicking Save.</p>
+        </div>
+
+        <div id="summary-section" class="hidden w-full max-w-6xl mx-auto">
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6 text-center text-sm font-bold flex items-center justify-center gap-2" role="alert">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Grades successfully submitted to the Admin.
+            </div>
+
+            <div class="border border-gray-300 rounded-t overflow-hidden shadow-sm opacity-90">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-800 text-white uppercase text-xs font-bold">
+                        <tr>
+                            <th class="py-3 px-4 text-center w-12">#</th>
+                            <th class="py-3 px-4 w-32">Student No.</th>
+                            <th class="py-3 px-4">Student Name</th>
+                            <th class="py-3 px-4 text-center">Final Grade</th>
+                            <th class="py-3 px-4 text-center">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-body" class="bg-white text-gray-700">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="flex justify-center mt-8">
+                 <button onclick="location.reload()" class="bg-plm-navy text-white hover:bg-gray-800 font-bold py-2 px-6 rounded shadow transition-colors text-sm">Return to Home</button>
+            </div>
+        </div>
+
+        <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-[100]">
+            <span id="toast-msg">Notification</span>
+        </div>
+
+    </main>
+
+    <script is:inline>
+        // --- LOGIC ---
+        
+        // 1. Confirm Button
+        const btnConfirm = document.getElementById('btn-confirm');
+        const emptyState = document.getElementById('empty-state');
+        const editSection = document.getElementById('edit-section');
+        const summarySection = document.getElementById('summary-section');
+        
+        btnConfirm.addEventListener('click', () => {
+            const course = document.getElementById('course-code').value;
+            if(!course) {
+                showToast("Please select a Course Code first.");
+                return;
+            }
+            // Hide empty state, Show edit table
+            emptyState.classList.add('hidden');
+            editSection.classList.remove('hidden');
+            summarySection.classList.add('hidden');
+        });
+
+        // 2. Auto-Remarks Logic
+        function updateRemarks(input) {
+            const row = input.closest('tr');
+            const remarkCell = row.querySelector('.remarks-cell');
+            const val = parseFloat(input.value);
+
+            if (!input.value) {
+                remarkCell.textContent = "-";
+                remarkCell.className = "py-3 px-4 text-center font-bold text-xs uppercase remarks-cell text-gray-400";
+            } else if (val <= 3.00 && val >= 1.00) {
+                remarkCell.textContent = "PASSED";
+                remarkCell.className = "py-3 px-4 text-center font-bold text-xs uppercase remarks-cell text-green-700";
+            } else if (val === 5.00) {
+                remarkCell.textContent = "FAILED";
+                remarkCell.className = "py-3 px-4 text-center font-bold text-xs uppercase remarks-cell text-red-600";
+            } else {
+                remarkCell.textContent = "INC"; 
+                remarkCell.className = "py-3 px-4 text-center font-bold text-xs uppercase remarks-cell text-blue-600";
+            }
+        }
+
+        // 3. Cancel Button Logic (Replaces Save as Draft)
+        document.getElementById('btn-cancel').addEventListener('click', () => {
+            // Confirmation dialog
+            if(confirm("Are you sure you want to cancel? Any unsaved grades will be cleared.")) {
+                // Clear all inputs
+                const inputs = document.querySelectorAll('.grade-input');
+                inputs.forEach(inp => {
+                    inp.value = '';
+                    updateRemarks(inp); // Reset the remarks to "-"
+                });
+                
+                // Hide table, return to empty state
+                editSection.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                
+                showToast("Action cancelled. Data cleared.");
+            }
+        });
+
+        // 4. Save (Submit) Logic
+        document.getElementById('btn-save').addEventListener('click', () => {
+            const inputs = document.querySelectorAll('.grade-input');
+            let hasData = false;
+            
+            // Check if at least one grade is entered
+            inputs.forEach(i => { if(i.value) hasData = true; });
+
+            if(!hasData) {
+                showToast("Please enter at least one grade before saving.");
+                return;
+            }
+
+            // Transfer data to summary table
+            const summaryBody = document.getElementById('summary-body');
+            summaryBody.innerHTML = ""; // Clear
+            
+            let count = 1;
+            inputs.forEach(inp => {
+                const row = inp.closest('tr');
+                const studentNo = row.cells[1].innerText;
+                const name = row.cells[2].innerText;
+                const grade = inp.value || "N/A";
+                const remarks = row.querySelector('.remarks-cell').innerText;
+                
+                let colorClass = "";
+                if(remarks === "PASSED") colorClass = "text-green-700 font-bold";
+                if(remarks === "FAILED") colorClass = "text-red-600 font-bold";
+
+                const newRow = `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-center border-r">${count++}</td>
+                        <td class="py-3 px-4 font-bold border-r">${studentNo}</td>
+                        <td class="py-3 px-4 uppercase border-r">${name}</td>
+                        <td class="py-3 px-4 text-center font-bold border-r">${grade}</td>
+                        <td class="py-3 px-4 text-center text-xs ${colorClass}">${remarks}</td>
+                    </tr>
+                `;
+                summaryBody.insertAdjacentHTML('beforeend', newRow);
+            });
+
+            // Switch views
+            editSection.classList.add('hidden');
+            summarySection.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Helper: Toast Notification
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

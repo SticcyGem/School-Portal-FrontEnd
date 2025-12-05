@@ -1,0 +1,157 @@
+---
+// --- IMPORTS ---
+import plmLogo from "../assets/PLMLogo.webp";
+import "../styles/global.css";
+import { Image } from "astro:assets";
+
+// --- 1. TYPE DEFINITIONS ---
+interface FacultyProfile {
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    facultyId: string;
+    email: string;
+    employeeType: string;
+}
+
+// --- 2. FETCH DATA (SIMULATED) ---
+async function fetchFacultyProfile(): Promise<FacultyProfile> {
+    return {
+        firstName: "JUAN",
+        middleName: "-",
+        lastName: "DELA CRUZ",
+        facultyId: "FACULTY ID",
+        email: "jdelacruz@plm.edu.ph",
+        employeeType: "Faculty" // Added mock value
+    };
+}
+
+const facultyData = await fetchFacultyProfile();
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLM Faculty Portal - Personal Info</title>
+    <!-- 1. TAILWIND & FONTS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 2. CUSTOM PLM COLORS */
+        :root {
+            --plm-navy: #1e1e2f;
+            --plm-red: #8B0000;
+            --plm-gold: #B8860B;
+        }
+        body { font-family: 'Roboto', sans-serif; }
+        
+        .bg-plm-navy { background-color: var(--plm-navy); }
+        .text-plm-navy { color: var(--plm-navy); }
+        .bg-plm-red { background-color: var(--plm-red); }
+        .bg-plm-gold { background-color: var(--plm-gold); }
+        .border-plm-gold { border-color: var(--plm-gold); }
+        .text-plm-gold { color: var(--plm-gold); }
+    </style>
+</head>
+<body class="bg-white font-sans min-h-screen flex flex-col text-gray-800">
+
+    <!-- HEADER SECTION -->
+    <header class="w-full bg-white shadow-sm z-50">
+        <div class="flex justify-center py-4">
+            <div class="w-15 h-15">
+                 <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+            </div>
+        </div>
+
+        <div class="h-5 w-full bg-plm-navy border-b-8 border-[#991B1B]"></div>
+        <nav class="border-y border-gray-200 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-12 text-sm font-medium text-gray-700">
+                <a href="/f2_classes" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Classes</a>
+                <a href="/f3_grades" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Grade</a>
+                <a href="#" class="bg-[#987818] text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all">Personal Info</a>
+                <a href="/f5_change-password" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Change Password</a>
+            </div>
+        </nav>
+
+        <div class="bg-white border-b border-plm-gold/50 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+                <span class="text-gray-800">
+                    <!-- FIXED: Accessing data from the object correctly -->
+                    Signed in as: <span class="font-bold uppercase">{facultyData.lastName}, {facultyData.firstName} ({facultyData.facultyId})</span>
+                </span>
+                <button class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow w-full max-w-6xl mx-auto p-6 md:p-8">
+        
+        <h1 class="text-center text-2xl font-bold text-plm-navy mb-12 uppercase tracking-wide">My Personal Information</h1>
+
+        <div class="flex flex-col md:flex-row gap-12 items-start justify-center">
+            
+            <!-- Profile Picture Box -->
+            <div class="w-full md:w-[220px] flex flex-col flex-shrink-0">
+                <div class="w-full aspect-square border border-gray-800 bg-white p-1 relative">
+                    <div class="w-full h-full bg-white flex items-end justify-center overflow-hidden relative">
+                        <!-- Placeholder User Icon -->
+                        <svg class="w-full h-full text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Fields -->
+            <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5">
+                
+                <div class="flex flex-col gap-5">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-plm-navy font-bold text-base">First Name</label>
+                        <input type="text" value={facultyData.firstName} readonly 
+                            class="w-full border border-gray-400 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:border-plm-gold text-base" />
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-plm-navy font-bold text-base">Middle Name</label>
+                        <input type="text" value={facultyData.middleName} readonly 
+                            class="w-full border border-gray-400 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:border-plm-gold text-base" />
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-plm-navy font-bold text-base">Last Name</label>
+                        <input type="text" value={facultyData.lastName} readonly 
+                            class="w-full border border-gray-400 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:border-plm-gold text-base" />
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-plm-navy font-bold text-base">Email Address</label>
+                        <input type="text" value={facultyData.email} readonly 
+                            class="w-full border border-gray-400 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:border-plm-gold text-base" />
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-5">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-plm-navy font-bold text-base">Faculty ID</label>
+                        <input type="text" value={facultyData.facultyId} readonly 
+                            class="w-full border border-gray-400 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:border-plm-gold text-base" />
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-plm-navy font-bold text-base">Employee</label>
+                        <input type="text" value={facultyData.employeeType} readonly 
+                            class="w-full border border-gray-400 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:border-plm-gold text-base" />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>

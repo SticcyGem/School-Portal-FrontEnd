@@ -1,0 +1,347 @@
+---
+// --- IMPORTS ---
+import plmLogo from "../assets/PLMLogo.webp";
+import "../styles/global.css";
+import { Image } from "astro:assets";
+
+// --- 1. DATA FETCHING (SERVER SIDE) ---
+const facultyName = "DELA CRUZ, JUAN";
+const facultyId = "FACULTY ID";
+
+// Mock Database: Classes
+const myClasses = [
+    { 
+        id: "class-1", 
+        code: "ICC 0101", 
+        section: "BSCS 1-2", 
+        description: "Introduction to Computing (Lecture)", 
+        units: 2, 
+        schedule: "MWF 10:00 (GV301)", 
+        studentCount: 28 
+    },
+    { 
+        id: "class-2", 
+        code: "ICC 0102", 
+        section: "BSCS 1-1", 
+        description: "Computer Programming 1 (Lab)", 
+        units: 3, 
+        schedule: "TTh 13:00 (LAB2)", 
+        studentCount: 30 
+    }
+];
+
+// Mock Database: Students
+const studentList = [
+    { 
+        id: "stud-1", 
+        name: "BONIFACIO, JAMES CRAVEN C.", 
+        studentId: "2025-0001",
+        email: "jcbonifacio2025@plm.edu.ph",
+        contact: "09123456789",
+        program: "BSCS - 1st Year",
+        status: "Regular",
+        block: "1",
+        load: { status: "Enrolled", totalUnits: 21 }
+    },
+    { 
+        id: "stud-2", 
+        name: "AGUINALDO, EMILIO F.", 
+        studentId: "2025-0002",
+        email: "efaguinaldo2025@plm.edu.ph",
+        contact: "09987654321",
+        program: "BSCS - 1st Year",
+        status: "Regular",
+        block: "1",
+        load: { status: "Enrolled", totalUnits: 21 }
+    },
+    { 
+        id: "stud-3", 
+        name: "RIZAL, JOSE P.", 
+        studentId: "2025-0003",
+        email: "jprizal2025@plm.edu.ph",
+        contact: "09112223333",
+        program: "BSCS - 1st Year",
+        status: "Regular",
+        block: "1",
+        load: { status: "Enrolled", totalUnits: 21 }
+    }
+];
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLM Faculty Portal - Classes</title>
+    <link rel="icon" href={plmLogo.src} />
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-white font-sans min-h-screen flex flex-col text-gray-800">
+
+    <!-- HEADER SECTION -->
+    <header class="w-full bg-white shadow-sm z-50">
+        <div class="flex justify-center py-4">
+            <div class="w-15 h-15">
+                 <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+            </div>
+        </div>
+
+    <div class="h-5 w-full bg-plm-navy border-b-9 border-[#991B1B]"></div>
+        <nav class="border-y border-gray-200 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-12 text-sm font-medium text-gray-700">
+                <a href="/f2_classes" class="bg-[#987818] text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all">Classes</a>
+                <a href="/f3_grades" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Grade</a>
+                <a href="/f4_personalinfo" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Personal Info</a>
+                <a href="/f5_change-password" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Change Password</a>
+            </div>
+        </nav>
+
+
+        
+
+        <div class="bg-white border-b border-plm-gold/50 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+                <span class="text-gray-800">
+                    Signed in as: <span class="font-bold uppercase">{facultyName} ({facultyId})</span>
+                </span>
+                <a href="/index" class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow w-full max-w-7xl mx-auto p-6 md:p-8 relative">
+        
+        <!-- VIEW 1: MY CLASSES TABLE -->
+        <div id="view-classes">
+            <h1 class="text-center text-2xl font-bold text-plm-navy mb-8 uppercase tracking-wide">MY CLASSES</h1>
+
+            <!-- Filters -->
+            <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-semibold text-plm-navy">School Year:</label>
+                    <select class="border border-plm-gold text-sm rounded px-4 h-9 bg-white w-48 focus:outline-none focus:ring-1 focus:ring-plm-gold cursor-pointer">
+                        <option>2025-2026</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-semibold text-plm-navy">Semester:</label>
+                    <select class="border border-plm-gold text-sm rounded px-4 h-9 bg-white w-48 focus:outline-none focus:ring-1 focus:ring-plm-gold cursor-pointer">
+                        <option>First Semester</option>
+                    </select>
+                </div>
+                <button type="button" class="bg-[#785c15] hover:bg-[#987818] text-white text-sm font-medium h-9 px-8 rounded shadow-sm transition-colors ml-2">
+                    Confirm
+                </button>
+            </div>
+
+            <!-- Classes Table -->
+            <div class="overflow-x-auto border border-plm-gold shadow-sm">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-[#1e1e2f] text-white uppercase text-xs font-bold">
+                        <tr>
+                            <th class="py-3 px-4 border-r border-gray-600 w-12 text-center">#</th>
+                            <th class="py-3 px-4 border-r border-gray-600 w-32 text-center">Subject Code</th>
+                            <th class="py-3 px-4 border-r border-gray-600 w-32 text-center">Section</th>
+                            <th class="py-3 px-4 border-r border-gray-600 text-center">Description</th>
+                            <th class="py-3 px-4 border-r border-gray-600 w-16 text-center">Units</th>
+                            <th class="py-3 px-4 border-r border-gray-600 text-center">Schedule</th>
+                            <th class="py-3 px-4 w-32 text-center">No. of Students</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-900 bg-white">
+                        {myClasses.map((item, index) => (
+                            <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 border-r border-gray-200 text-center font-bold">{index + 1}.</td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center">{item.code}</td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center">
+                                    <button type="button" class="text-blue-600 hover:underline font-bold section-link cursor-pointer" 
+                                            data-section={item.section}>
+                                        {item.section}
+                                    </button>
+                                </td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center">{item.description}</td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center">{item.units}</td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center">{item.schedule}</td>
+                                <td class="py-3 px-4 text-center">{item.studentCount}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW 2: STUDENT LIST (Initially Hidden via Inline Style) -->
+        <div id="view-student-list" style="display: none;">
+            <div class="flex items-center mb-6">
+                <button type="button" id="back-to-classes" class="flex items-center text-sm text-gray-500 hover:text-plm-navy transition-colors mr-4 group">
+                    <span class="mr-1 group-hover:-translate-x-1 transition-transform">←</span> Back
+                </button>
+                <h1 class="text-2xl font-bold text-plm-navy uppercase tracking-wide flex-1 text-center">
+                    CLASS LIST: <span id="class-title" class="text-black"></span>
+                </h1>
+                <div class="w-16"></div>
+            </div>
+
+            <!-- Student List Table -->
+            <div class="overflow-x-auto border border-plm-gold shadow-sm rounded-sm">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-[#1e1e2f] text-white uppercase text-xs font-bold">
+                        <tr>
+                            <th class="py-3 px-4 border-r border-gray-600 w-12 text-center">#</th>
+                            <th class="py-3 px-4 border-r border-gray-600">Student Name</th>
+                            <th class="py-3 px-4 border-r border-gray-600 w-40 text-center">Student No.</th>
+                            <th class="py-3 px-4 border-r border-gray-600 w-40 text-center">Program</th>
+                            <th class="py-3 px-4 border-r border-gray-600 w-32 text-center">Status</th>
+                            <th class="py-3 px-4 w-24 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-900 bg-white">
+                        {studentList.map((student, idx) => (
+                            <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 border-r border-gray-200 text-center font-bold text-gray-500">{idx + 1}</td>
+                                <td class="py-3 px-4 border-r border-gray-200 font-bold text-plm-navy uppercase">
+                                    {student.name}
+                                </td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center font-mono text-gray-600">
+                                    {student.studentId}
+                                </td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center">
+                                    {student.program}
+                                </td>
+                                <td class="py-3 px-4 border-r border-gray-200 text-center text-green-700 font-bold text-xs uppercase">
+                                    {student.load.status}
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <!-- Use data attributes to pass JSON safely -->
+                                    <button type="button" class="view-details-btn text-xs bg-[#987818] text-white px-4 py-1.5 rounded hover:bg-[#785c15] transition-colors cursor-pointer"
+                                        data-details={JSON.stringify(student)}>
+                                        VIEW INFO
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW 3: MODAL (Initially Hidden via Inline Style) -->
+        <div id="student-modal" style="display: none;" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300">
+            <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg relative border-2 border-[#987818] overflow-hidden">
+                
+                <div class="h-1.5 w-full bg-gradient-to-r from-blue-900 via-blue-700 to-blue-900"></div>
+
+                <div class="p-8">
+                    <h2 id="modal-name" class="text-center text-xl font-bold text-gray-900 uppercase mb-1"></h2>
+                    <p id="modal-id" class="text-center text-sm text-gray-500 font-bold mb-8"></p>
+
+                    <div class="mb-6">
+                        <h3 class="text-plm-navy font-bold text-lg mb-3">Contact Info</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Email Address:</span>
+                                <span id="modal-email" class="text-gray-900"></span>
+                            </div>
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Contact Number:</span>
+                                <span id="modal-contact" class="text-gray-900"></span>
+                            </div>
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Program/Year:</span>
+                                <span id="modal-program" class="text-gray-900"></span>
+                            </div>
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Registration Status:</span>
+                                <span id="modal-status" class="text-gray-900"></span>
+                            </div>
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Block Section:</span>
+                                <span id="modal-block" class="text-gray-900"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 my-4"></div>
+
+                    <div class="mb-8">
+                        <h3 class="text-plm-navy font-bold text-lg mb-3">Current Load</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Status:</span>
+                                <span id="modal-load-status" class="text-gray-900"></span>
+                            </div>
+                            <div class="grid grid-cols-[140px_1fr]">
+                                <span class="text-gray-600 font-medium">Total Units:</span>
+                                <span id="modal-units" class="text-gray-900"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="button" id="close-modal" class="bg-[#987818] hover:bg-[#785c15] text-white font-bold py-2 px-8 rounded shadow transition-colors text-sm">
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- CLIENT SIDE LOGIC -->
+    <script>
+        // Event Delegation for Bulletproof Clicking
+        document.addEventListener('click', function(event) {
+            
+            const target = event.target;
+
+            // 1. CLICK SECTION LINK -> SHOW STUDENT LIST
+            if (target.closest('.section-link')) {
+                const btn = target.closest('.section-link');
+                const sectionName = btn.getAttribute('data-section');
+                
+                // Update Title
+                const title = document.getElementById('class-title');
+                if (title) title.textContent = sectionName;
+
+                // Toggle Views using Direct Style
+                document.getElementById('view-classes').style.display = 'none';
+                document.getElementById('view-student-list').style.display = 'block';
+                window.scrollTo(0,0);
+            }
+
+            // 2. CLICK BACK BUTTON -> SHOW CLASSES
+            if (target.closest('#back-to-classes')) {
+                document.getElementById('view-student-list').style.display = 'none';
+                document.getElementById('view-classes').style.display = 'block';
+            }
+
+            // 3. CLICK VIEW INFO -> OPEN MODAL
+            if (target.closest('.view-details-btn')) {
+                const btn = target.closest('.view-details-btn');
+                const data = JSON.parse(btn.getAttribute('data-details'));
+
+                // Populate Modal
+                document.getElementById('modal-name').textContent = data.name;
+                document.getElementById('modal-id').textContent = data.studentId;
+                document.getElementById('modal-email').textContent = data.email;
+                document.getElementById('modal-contact').textContent = data.contact;
+                document.getElementById('modal-program').textContent = data.program;
+                document.getElementById('modal-status').textContent = data.status;
+                document.getElementById('modal-block').textContent = data.block;
+                document.getElementById('modal-load-status').textContent = data.load.status;
+                document.getElementById('modal-units').textContent = data.load.totalUnits;
+
+                // Show Modal
+                document.getElementById('student-modal').style.display = 'flex';
+            }
+
+            // 4. CLOSE MODAL
+            if (target.closest('#close-modal') || target.id === 'student-modal') {
+                document.getElementById('student-modal').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
