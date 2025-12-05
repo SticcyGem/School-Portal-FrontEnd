@@ -1,0 +1,535 @@
+---
+// --- IMPORTS ---
+import plmLogo from "../assets/PLMLogo.webp";
+import "../styles/global.css";
+import { Image } from "astro:assets";
+
+// --- 1. TYPE DEFINITIONS ---
+interface AdminProfile {
+    name: string;
+    role: string;
+    adminId: string;
+}
+
+// --- 2. DATA FETCHING ---
+async function fetchAdminProfile(): Promise<AdminProfile> {
+    return {
+        name: "DELA CRUZ, JUAN",
+        role: "ADMIN",
+        adminId: "ADMIN ID"
+    };
+}
+
+const adminData = await fetchAdminProfile();
+
+// Mock System Data (Initial State)
+const systemStatus = {
+    schoolYear: "2025-2026",
+    semester: "First Semester",
+    status: "CLOSED" // Default to CLOSED to demonstrate opening it
+};
+
+// Handle View State (Calendar vs Course Creation)
+const view = Astro.url.searchParams.get('view') || 'calendar';
+const isCalendarView = view === 'calendar';
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLM Student Portal - Change Password</title>
+    <link rel="icon" href={plmLogo.src} />
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-white font-sans min-h-screen flex flex-col text-gray-800">
+
+    <!-- HEADER SECTION -->
+    <header class="w-full bg-white shadow-sm z-50">
+        <div class="flex justify-center py-4">
+            <div class="w-15 h-15">
+                 <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+            </div>
+        </div>
+<div class="h-5 w-full bg-plm-navy border-b-9 border-[#991B1B]"></div>
+        
+        <nav class="border-y border-gray-200 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-4 text-sm font-medium text-gray-700">
+                
+                <!-- DROPDOWN: SYSTEM CONFIGURATION -->
+                <div class="relative group">
+                    <button class="bg-[#1e1e2f] text-white px-6 py-2 rounded shadow-sm hover:bg-[#2d2d46] transition-all flex items-center gap-1 cursor-default">
+                        System Configuration
+                        <!-- Tiny Triangle Icon -->
+                        <svg class="w-2.5 h-2.5 ml-1 fill-current opacity-80" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </button>
+                    
+                    <!-- Dropdown Panel -->
+                    <div class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-48 bg-[#EAEAEA] border border-gray-300 shadow-xl rounded-md z-50 overflow-hidden text-[#1e1e2f]">
+                        <a href="?view=calendar" class={`block px-4 py-3 text-center text-sm font-medium border-b border-gray-300/50 hover:bg-gray-200 transition-colors ${isCalendarView ? 'font-bold' : ''}`}>
+                            Calendar
+                        </a>
+                        <a href="?view=course-creation" class={`block px-4 py-3 text-center text-sm font-medium hover:bg-gray-200 transition-colors ${!isCalendarView ? 'font-bold' : ''}`}>
+                            Course Creation
+                        </a>
+                    </div>
+                </div>
+
+                <a href="/a2_user-manage" class="px-6 py-2 rounded hover:text-[#1e1e2f] hover:bg-gray-100 transition-all">User Management</a>
+                <a href="/a3_grade-audit" class="px-6 py-2 rounded hover:text-[#1e1e2f] hover:bg-gray-100 transition-all">Grade Audit</a>
+                <a href="/a4_change-password" class="px-6 py-2 rounded hover:text-[#1e1e2f] hover:bg-gray-100 transition-all">Change Password</a>
+            </div>
+        </nav>
+
+        <div class="bg-white border-b border-plm-gold/50 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+                <span class="text-gray-800">
+                    Signed in as: <span class="font-bold uppercase">{adminData.name} ({adminData.adminId})</span>
+                </span>
+                <button class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow w-full max-w-5xl mx-auto p-6 md:p-8 relative">
+        
+        <h1 class="text-center text-2xl font-bold text-[#1e1e2f] mb-8 uppercase tracking-wide">SYSTEM CONFIGURATION</h1>
+
+        <!-- VIEW: CALENDAR (Default) -->
+        {isCalendarView ? (
+            <div class="space-y-6 animate-fade-in">
+
+                <!-- PANEL 1: Current System Status -->
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8 flex flex-col items-center justify-center transition-all" id="status-panel">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-4">Current System Status</h2>
+                    <div class="text-center">
+                        <p class="text-gray-600 mb-1">
+                            School Year: <span class="font-bold text-gray-900">{systemStatus.schoolYear} – {systemStatus.semester}</span>
+                        </p>
+                        <p class="text-gray-600 text-lg">
+                            Status: <span id="current-status" class="font-bold uppercase text-red-600 tracking-wider">{systemStatus.status}</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- PANEL 2: Define Academic Term -->
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-2">Define Academic Term</h2>
+                    <p class="text-gray-500 text-sm mb-6">(Configure the School Year and Semester details)</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <!-- School Year Dropdown -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm font-bold text-[#1e1e2f]">School Year:</label>
+                            <div class="relative">
+                                <select class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-600 bg-white appearance-none focus:outline-none focus:ring-1 focus:ring-[#B8860B]">
+                                    <option>2025-2026</option>
+                                    <option>2024-2025</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Semester Dropdown -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm font-bold text-[#1e1e2f]">Semester:</label>
+                            <div class="relative">
+                                <select class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-600 bg-white appearance-none focus:outline-none focus:ring-1 focus:ring-[#B8860B]">
+                                    <option>First Semester</option>
+                                    <option>Second Semester</option>
+                                    <option>Summer</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="col-span-1 md:col-span-2 mt-2">
+                            <h3 class="text-sm font-bold text-[#1e1e2f]">Term Duration (Classes):</h3>
+                        </div>
+
+                        <!-- Start Date (Term Duration) -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs text-gray-500 font-medium">Start Date:</label>
+                            <div class="relative">
+                                <input type="date" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 bg-[#ccc] rounded-r border-y border-r border-[#B8860B] text-gray-600 pointer-events-none">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enrollment End (Term Duration) -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs text-gray-500 font-medium">Enrollment End:</label>
+                            <div class="relative">
+                                <input type="date" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 bg-[#ccc] rounded-r border-y border-r border-[#B8860B] text-gray-600 pointer-events-none">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL 3: Enrollment Gate Control -->
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-2">Enrollment Gate Control</h2>
+                    <p class="text-gray-500 text-sm mb-6">(Set the dates when students can access the enrollment page)</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        
+                        <!-- Enrollment Start -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm font-bold text-gray-600">Enrollment Start:</label>
+                            <div class="relative">
+                                <input type="date" id="gate-start-date" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 bg-[#ccc] rounded-r border-y border-r border-[#B8860B] text-gray-600 pointer-events-none">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enrollment End -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm font-bold text-gray-600">Enrollment End:</label>
+                            <div class="relative">
+                                <input type="date" id="gate-end-date" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 bg-[#ccc] rounded-r border-y border-r border-[#B8860B] text-gray-600 pointer-events-none">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="col-span-1 md:col-span-2 mt-4 grid grid-cols-2 gap-8">
+                            <div class="flex flex-col items-center">
+                                <button id="btn-start-enrollment" class="w-full bg-[#1e1e2f] text-white font-bold py-3 rounded shadow-md hover:bg-[#2d2d46] transition-colors active:scale-95">
+                                    Start Enrollment
+                                </button>
+                                <span class="text-xs text-gray-500 italic mt-2">(Sets Status to OPEN)</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <button id="btn-close-enrollment" class="w-full bg-[#1e1e2f] text-white font-bold py-3 rounded shadow-md hover:bg-[#2d2d46] transition-colors active:scale-95">
+                                    Close Enrollement
+                                </button>
+                                <span class="text-xs text-gray-500 italic mt-2">(Sets Status to CLOSED)</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        ) : (
+            /* VIEW: COURSE CREATION */
+            <div class="space-y-6 animate-fade-in">
+                
+                <!-- PANEL 1: Existing Subject List -->
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-6 text-center">Existing Subject List</h2>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex justify-center items-center gap-4">
+                            <div class="relative w-full max-w-md">
+                                <input id="subject-search" type="text" placeholder="Search Prof or Subject Code" class="w-full border border-[#B8860B] rounded-sm px-4 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#B8860B] pr-10" />
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+                            </div>
+                            <button id="btn-search-subject" class="bg-[#1e1e2f] text-white text-sm font-bold px-8 py-2 rounded-sm shadow-sm hover:bg-[#2d2d46] transition-colors">
+                                Search
+                            </button>
+                        </div>
+                        <!-- Results Container (Hidden initially) -->
+                        <div id="search-results" class="max-w-xl mx-auto w-full hidden border border-gray-200 rounded mt-2 max-h-40 overflow-y-auto">
+                            <!-- Results injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL 2: Manage Subject -->
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-1">Manage Subject</h2>
+                    <p class="text-gray-500 text-sm mb-6">(Configure the course details)</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        
+                        <!-- Subject Details -->
+                        <div class="col-span-1 md:col-span-2">
+                            <h3 class="text-sm font-bold text-[#1e1e2f] mb-3">Subject Details:</h3>
+                        </div>
+
+                        <!-- Subject Code -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm font-medium text-[#1e1e2f]">Subject Code:</label>
+                            <input id="manage-subject-code" type="text" placeholder="e.g. CS 101" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                        </div>
+
+                        <!-- Units -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm font-medium text-[#1e1e2f]">Units:</label>
+                            <input id="manage-units" type="number" placeholder="e.g. 3" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="flex flex-col gap-1 col-span-1 md:col-span-2">
+                            <label class="text-sm font-medium text-[#1e1e2f]">Description</label>
+                            <input id="manage-description" type="text" placeholder="e.g. Introduction to Computing" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#B8860B]" />
+                        </div>
+
+                        <!-- Spacer -->
+                        <div class="col-span-1 md:col-span-2 my-2 border-t border-gray-100"></div>
+
+                        <!-- Requirements -->
+                        <div class="col-span-1 md:col-span-2">
+                            <h3 class="text-sm font-bold text-[#1e1e2f] mb-1">Requirements: (Optional)</h3>
+                        </div>
+
+                        <div class="flex flex-col gap-1 col-span-1 md:col-span-2">
+                            <label class="text-sm font-medium text-[#1e1e2f]">Prerequisite:</label>
+                            <div class="relative">
+                                <select id="manage-prerequisite" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-500 bg-white appearance-none focus:outline-none focus:ring-1 focus:ring-[#B8860B]">
+                                    <option value="" disabled selected>Select from existing subject</option>
+                                    <option value="None">None</option>
+                                    <option value="CS 101">CS 101 - Intro to Computing</option>
+                                    <option value="CS 102">CS 102 - Intro to Programming</option>
+                                    <option value="MATH 101">MATH 101 - Calculus I</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Course Linking -->
+                        <div class="col-span-1 md:col-span-2 mt-2">
+                            <h3 class="text-sm font-bold text-[#1e1e2f] mb-1">Course Linking:</h3>
+                        </div>
+
+                        <div class="flex flex-col gap-1 col-span-1 md:col-span-2">
+                            <label class="text-sm font-medium text-[#1e1e2f]">Belongs to Course:</label>
+                            <div class="relative">
+                                <select id="manage-course" class="w-full border border-[#B8860B] rounded px-4 py-2 text-gray-500 bg-white appearance-none focus:outline-none focus:ring-1 focus:ring-[#B8860B]">
+                                    <option value="" disabled selected>Add to Course</option>
+                                    <option value="BSCS">Bachelor of Science in Computer Science</option>
+                                    <option value="BSIT">Bachelor of Science in Information Technology</option>
+                                    <option value="BSCpE">Bachelor of Science in Computer Engineering</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="col-span-1 md:col-span-2 flex justify-center gap-6 mt-6">
+                            <button id="btn-cancel-subject" class="bg-white text-[#1e1e2f] text-sm font-bold px-10 py-2 rounded border border-[#B8860B] hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button id="btn-save-subject" class="bg-[#1e1e2f] text-white text-sm font-bold px-10 py-2 rounded shadow-sm hover:bg-[#2d2d46] transition-colors">
+                                Save
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        )}
+
+        <!-- GLOBAL MODAL (For Alerts) -->
+        <div id="custom-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-lg shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300 border border-gray-200">
+                <div class="text-center">
+                    <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+                    <h3 id="modal-title" class="text-lg leading-6 font-bold text-gray-900 mb-2"></h3>
+                    <p id="modal-message" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="mt-5 sm:mt-6">
+                    <button id="modal-close" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#1e1e2f] text-base font-medium text-white hover:bg-blue-900 focus:outline-none transition-colors">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- INTERACTIVE SCRIPTS -->
+    <script is:inline>
+        // --- Modal Helper ---
+        const modal = document.getElementById('custom-modal');
+        const modalClose = document.getElementById('modal-close');
+
+        function showModal(title, message, type = 'success') {
+            const mTitle = document.getElementById('modal-title');
+            const mMsg = document.getElementById('modal-message');
+            const mIcon = document.getElementById('modal-icon');
+
+            if (mTitle) mTitle.textContent = title;
+            if (mMsg) mMsg.textContent = message;
+            
+            if (mIcon) {
+                if (type === 'error') {
+                    mIcon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4";
+                    mIcon.innerHTML = `<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+                } else {
+                    mIcon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4";
+                    mIcon.innerHTML = `<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
+                }
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        if (modalClose) {
+            modalClose.addEventListener('click', () => {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            });
+        }
+
+        // --- ENROLLMENT GATE LOGIC (Calendar View) ---
+        const btnStart = document.getElementById('btn-start-enrollment');
+        const btnClose = document.getElementById('btn-close-enrollment');
+        const startDateInput = document.getElementById('gate-start-date');
+        const endDateInput = document.getElementById('gate-end-date');
+        const statusText = document.getElementById('current-status');
+        const statusPanel = document.getElementById('status-panel');
+
+        function updateStatus(status) {
+            if (statusText) {
+                statusText.textContent = status;
+                if (status === 'OPEN') {
+                    statusText.className = "font-bold uppercase text-green-600 tracking-wider";
+                    statusPanel?.classList.add('border-green-500');
+                    statusPanel?.classList.remove('border-gray-200');
+                } else {
+                    statusText.className = "font-bold uppercase text-red-600 tracking-wider";
+                    statusPanel?.classList.remove('border-green-500');
+                    statusPanel?.classList.add('border-gray-200');
+                }
+            }
+        }
+
+        if (btnStart) {
+            btnStart.addEventListener('click', () => {
+                const start = startDateInput.value;
+                const end = endDateInput.value;
+
+                if (!start || !end) {
+                    showModal('Date Error', 'Please select both Enrollment Start and End dates before starting.', 'error');
+                    return;
+                }
+                updateStatus('OPEN');
+                showModal('Enrollment Opened', `Enrollment is now OPEN from ${start} to ${end}.`, 'success');
+            });
+        }
+
+        if (btnClose) {
+            btnClose.addEventListener('click', () => {
+                updateStatus('CLOSED');
+                showModal('Enrollment Closed', 'The enrollment period has been manually closed.', 'success');
+            });
+        }
+
+        // --- COURSE CREATION LOGIC ---
+        
+        // Mock Database for Searching
+        const mockSubjects = [
+            { code: "CS 101", desc: "Introduction to Computing" },
+            { code: "CS 102", desc: "Computer Programming 1" },
+            { code: "MATH 101", desc: "Calculus I" },
+            { code: "ENG 101", desc: "Purposive Communication" },
+            { code: "PE 101", desc: "Movement Enhancement" },
+            { code: "NSTP 101", desc: "Civic Welfare Training Service 1" }
+        ];
+
+        // Search Functionality
+        const btnSearch = document.getElementById('btn-search-subject');
+        const searchInput = document.getElementById('subject-search');
+        const searchResults = document.getElementById('search-results');
+
+        if (btnSearch && searchInput && searchResults) {
+            btnSearch.addEventListener('click', () => {
+                const query = searchInput.value.toLowerCase().trim();
+                
+                if (!query) {
+                    showModal('Input Required', 'Please enter a Subject Code to search.', 'error');
+                    searchResults.classList.add('hidden');
+                    return;
+                }
+
+                // Filter Results
+                const results = mockSubjects.filter(sub => sub.code.toLowerCase().includes(query) || sub.desc.toLowerCase().includes(query));
+                
+                if (results.length > 0) {
+                    searchResults.innerHTML = results.map(sub => `
+                        <div class="px-4 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 text-sm flex justify-between items-center cursor-default">
+                            <span class="font-bold text-[#1e1e2f]">${sub.code}</span>
+                            <span class="text-gray-500 text-xs">${sub.desc}</span>
+                        </div>
+                    `).join('');
+                    searchResults.classList.remove('hidden');
+                } else {
+                    searchResults.innerHTML = `<div class="px-4 py-3 text-sm text-gray-500 italic text-center">No subjects found matching "${searchInput.value}".</div>`;
+                    searchResults.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Save & Cancel Logic
+        const btnSaveSubject = document.getElementById('btn-save-subject');
+        const btnCancelSubject = document.getElementById('btn-cancel-subject');
+        
+        const inputCode = document.getElementById('manage-subject-code');
+        const inputUnits = document.getElementById('manage-units');
+        const inputDesc = document.getElementById('manage-description');
+        const inputPrereq = document.getElementById('manage-prerequisite');
+        const inputCourse = document.getElementById('manage-course');
+
+        if (btnSaveSubject) {
+            btnSaveSubject.addEventListener('click', () => {
+                // Validation
+                const code = inputCode.value.trim();
+                const units = inputUnits.value.trim();
+                const desc = inputDesc.value.trim();
+                const course = inputCourse.value; // select value
+
+                if (!code || !units || !desc || !course) {
+                    showModal('Missing Information', 'Please fill in all required fields (Subject Code, Units, Description, and Course).', 'error');
+                    return;
+                }
+
+                // Success Simulation
+                showModal('Subject Saved', `Successfully created/updated subject: ${code}`, 'success');
+                
+                // Clear Form after save (optional, mimics real app behavior)
+                clearManageForm();
+            });
+        }
+
+        if (btnCancelSubject) {
+            btnCancelSubject.addEventListener('click', () => {
+                clearManageForm();
+                showModal('Action Cancelled', 'The form has been cleared.', 'success'); // Using success for neutral notification
+            });
+        }
+
+        function clearManageForm() {
+            if(inputCode) inputCode.value = '';
+            if(inputUnits) inputUnits.value = '';
+            if(inputDesc) inputDesc.value = '';
+            if(inputPrereq) inputPrereq.selectedIndex = 0;
+            if(inputCourse) inputCourse.selectedIndex = 0;
+        }
+
+    </script>
+</body>
+</html>
