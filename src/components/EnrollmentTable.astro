@@ -1,0 +1,110 @@
+---
+// This component now lives in src/components/
+
+export interface SectionDTO {
+    sectionNo: number;
+    sectionName: string;
+    subjectCode: string;
+    subjectTitle: string;
+    units: number;
+    schedule: string;
+    status: string; // "OPEN" or "FULL"
+}
+
+export interface EnrollmentOutputProps {
+    data: {
+        termName: string;
+        enrollmentStatus: string;
+        sections: SectionDTO[];
+        remarks?: string;
+    } | null;
+}
+
+const { data } = Astro.props as EnrollmentOutputProps;
+
+// Define custom color variables for the status text
+const statusColor = (status: string) => {
+    switch (status) {
+        case 'OPEN': return 'text-green-600 font-bold';
+        case 'FULL': return 'text-red-600 font-bold';
+        default: return 'text-gray-500';
+    }
+}
+const enrollmentStatusColor = (status: string) => {
+    switch (status) {
+        case 'ENROLLED': return 'text-green-700 bg-green-100 border-green-300';
+        case 'DRAFT': return 'text-yellow-700 bg-yellow-100 border-yellow-300';
+        case 'REJECTED': return 'text-red-700 bg-red-100 border-red-300';
+        default: return 'text-gray-700 bg-gray-100 border-gray-300';
+    }
+}
+
+// Calculate total units (for demonstration)
+const totalUnits = data?.sections.reduce((sum, section) => sum + section.units, 0) ?? 0;
+const hasSections = (data?.sections?.length ?? 0) > 0;
+import "../styles/global.css";
+---
+
+<div id="enrollment-output-container" class="w-full max-w-7xl mx-auto p-6 md:p-8">
+
+    <h1 class="text-center text-2xl font-bold text-plm-navy mb-4 uppercase tracking-wide">MY ENROLLMENT STATUS</h1>
+
+    <div class="flex justify-center mb-8">
+        <div class={`text-sm py-2 px-4 rounded-lg border-2 shadow-md ${enrollmentStatusColor(data?.enrollmentStatus ?? 'NONE')}`}>
+            <span class="font-bold">Current Status:</span>
+            <span class="uppercase">
+                {data?.enrollmentStatus ?? 'NOT STARTED'}
+            </span>
+            {data?.remarks && <span class="block text-xs italic opacity-80 mt-1">Remarks: {data.remarks}</span>}
+        </div>
+    </div>
+
+    <div id="available-subjects-table">
+        <h2 class="text-lg font-bold text-plm-navy mb-2 uppercase border-b-2 border-plm-gold inline-block pb-1">
+            {data?.termName ?? 'Loading Term'} - Available Sections ({data?.sections?.length ?? 0})
+        </h2>
+        <div class="overflow-x-auto border border-plm-gold shadow-sm">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-[#7F1D1D] text-white uppercase text-xs font-bold">
+                <tr>
+                    <th class="py-2.5 px-3 border-r border-[#B8860B] w-10 text-center">#</th>
+                    <th class="py-2.5 px-3 border-r border-[#B8860B] w-24">Subject Code</th>
+                    <th class="py-2.5 px-3 border-r border-[#B8860B]">Description (Section)</th>
+                    <th class="py-2.5 px-3 border-r border-[#B8860B] w-16 text-center">Units</th>
+                    <th class="py-2.5 px-3 border-r border-[#B8860B]">Schedule</th>
+                    <th class="py-2.5 px-3">Status</th>
+                </tr>
+                </thead>
+                <tbody class="text-gray-900 bg-white">
+                {hasSections ? data!.sections.map((sec, index) => (
+                        <tr class="border-b border-plm-gold/30 hover:bg-gray-50 transition-colors">
+                            <td class="py-2 px-3 border-r border-plm-gold/50 text-center font-bold">{index + 1}</td>
+                            <td class="py-2 px-3 border-r border-plm-gold/50 font-bold">{sec.subjectCode}</td>
+                            <td class="py-2 px-3 border-r border-plm-gold/50 uppercase font-medium">
+                                {sec.subjectTitle}
+                                <div class="text-xs text-gray-500 font-normal">({sec.sectionName})</div>
+                            </td>
+                            <td class="py-2 px-3 border-r border-plm-gold/50 text-center font-bold">{sec.units}</td>
+                            <td class="py-2 px-3 border-r border-plm-gold/50 text-xs">{sec.schedule}</td>
+                            <td class={`py-2 px-3 ${statusColor(sec.status)} text-xs font-bold`}>
+                                {sec.status}
+                            </td>
+                        </tr>
+                )) : (
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-500 italic">
+                                {data ? `No sections available for ${data.termName}.` : 'Loading available sections...'}
+                            </td>
+                        </tr>
+                )}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="w-full bg-[#7F1D1D] text-white py-3 px-6 flex justify-end items-center shadow-md mt-0 rounded-b-md">
+            <span class="font-bold text-sm">
+                Total Units Found: <span class="text-lg ml-2 font-mono font-bold">{totalUnits}</span>
+            </span>
+        </div>
+    </div>
+</div>

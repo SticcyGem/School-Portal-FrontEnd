@@ -1,0 +1,192 @@
+---
+// --- IMPORTS ---
+import plmLogo from "../assets/PLMLogo.webp";
+import "../styles/global.css";
+import { Image } from "astro:assets";
+
+// We keep the URL param logic for view switching (Step 1 vs Step 2)
+const yearParam = Astro.url.searchParams.get('year');
+const semParam = Astro.url.searchParams.get('sem');
+const stepParam = Astro.url.searchParams.get('step') || '1';
+const isStep2 = stepParam === '2' && !!yearParam && !!semParam;
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLM Student Portal - Enrollment</title>
+    <link rel="icon" href={plmLogo.src} />
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-white font-sans min-h-screen flex flex-col text-gray-800">
+
+<header class="w-full bg-white shadow-sm z-50">
+    <div class="flex justify-center py-4">
+        <div class="w-15 h-15">
+            <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+        </div>
+    </div>
+    <div class="h-5 w-full bg-plm-navy border-b-9 border-[#991B1B]"></div>
+    <nav class="border-y border-gray-200 py-2">
+        <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-12 text-sm font-medium text-gray-700">
+            <a href="/frontend/src/pages/dashboard" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Home</a>
+            <a href="/frontend/src/backup/student_schedule" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Schedule</a>
+            <a href="/frontend/src/backup/grade" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">Grade</a>
+            <a href="/enrollment" class="bg-plm-navy text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all">Enrollment</a>
+            <a href="/frontend/src/backup/personalinfo" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all">Personal Info</a>
+            <a href="/frontend/src/backup/change-password" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">Change Password</a>
+        </div>
+    </nav>
+</header>
+
+<main class="flex-grow w-full max-w-7xl mx-auto p-6 md:p-8 relative">
+
+    <div id="enrollment-container">
+
+        <div id="step-1" class={`${isStep2 ? 'hidden' : ''} animate-fade-in`}>
+            <h1 class="text-center text-2xl font-bold text-plm-navy mb-8 uppercase tracking-wide">MY ENROLLMENT</h1>
+
+            <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-semibold text-plm-navy">School Year:</label>
+                    <select id="school-year" class="border border-plm-gold text-sm rounded px-4 h-9 bg-white w-48 focus:outline-none focus:ring-1 focus:ring-plm-gold cursor-pointer">
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2024-2025">2024-2025</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-semibold text-plm-navy">Semester:</label>
+                    <select id="semester" class="border border-plm-gold text-sm rounded px-4 h-9 bg-white w-48 focus:outline-none focus:ring-1 focus:ring-plm-gold cursor-pointer">
+                        <option value="First Semester">First Semester</option>
+                        <option value="Second Semester">Second Semester</option>
+                    </select>
+                </div>
+                <button id="btn-to-step-2" class="bg-[#1e1e2f] hover:bg-plm-navy text-white text-sm font-medium h-9 px-8 rounded shadow-sm transition-colors ml-2">
+                    Confirm
+                </button>
+            </div>
+
+            <div class="w-full bg-[#E31C23] text-white py-2 px-4 text-center font-bold text-sm uppercase shadow-sm">
+                Prerequisite
+            </div>
+        </div>
+
+        <div id="step-2" class={`${!isStep2 ? 'hidden' : ''} animate-fade-in`}>
+            <h1 class="text-center text-2xl font-bold text-plm-navy mb-4 uppercase tracking-wide">MY ENROLLMENT</h1>
+
+            <div class="flex justify-center items-center gap-6 mb-6 text-sm">
+                <div>
+                    <span class="font-bold text-plm-navy">School Year:</span>
+                    <span id="display-year" class="border border-plm-gold px-4 py-1.5 rounded ml-2 bg-white text-gray-700 shadow-sm">{yearParam}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-plm-navy">Semester:</span>
+                    <span id="display-sem" class="border border-plm-gold px-4 py-1.5 rounded ml-2 bg-white text-gray-700 shadow-sm">{semParam}</span>
+                </div>
+            </div>
+
+            <div id="prereq-container" class="mb-8 hidden">
+                <h2 class="text-lg font-bold text-[#E31C23] mb-2 uppercase flex items-center gap-2 border-b-2 border-[#E31C23] inline-block pb-1">
+                    Prerequisite Subjects
+                </h2>
+                <div class="overflow-x-auto border border-[#E31C23] shadow-sm">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-[#E31C23] text-white uppercase text-xs font-bold">
+                        <tr>
+                            <th class="py-2.5 px-3 border-r border-white/20 w-10 text-center">#</th>
+                            <th class="py-2.5 px-3 border-r border-white/20 w-32">Subject Code</th>
+                            <th class="py-2.5 px-3 border-r border-white/20">Description</th>
+                            <th class="py-2.5 px-3 border-r border-white/20 w-16 text-center">Units</th>
+                            <th class="py-2.5 px-3 text-center">Schedule</th>
+                        </tr>
+                        </thead>
+                        <tbody id="prereq-table-body" class="text-gray-900 bg-red-50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-bold text-plm-navy mb-2 uppercase border-b-2 border-plm-gold inline-block pb-1">Available Subjects</h2>
+                <div class="overflow-x-auto border border-plm-gold shadow-sm">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-[#7F1D1D] text-white uppercase text-xs font-bold">
+                        <tr>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B] w-10 text-center">#</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B] w-32">Subject Code</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B]">Description</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B] w-16 text-center">Units</th>
+                            <th class="py-2.5 px-3 text-center">Schedule</th>
+                        </tr>
+                        </thead>
+                        <tbody id="regular-table-body" class="text-gray-900 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="w-full bg-[#7F1D1D] text-white py-3 px-6 flex justify-between items-center shadow-md mt-8 rounded-sm">
+                    <span class="font-bold text-sm">
+                        Total Units Enrolled: <span id="total-units-display" class="text-lg ml-2 font-mono font-bold">0</span>
+                    </span>
+                <div class="flex gap-3">
+                    <button id="btn-cancel-step2" class="bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-2 px-6 rounded shadow border border-white/10 transition-transform active:scale-95">
+                        Cancel
+                    </button>
+                    <button id="btn-to-step-3" class="bg-[#1e1e2f] hover:bg-gray-800 text-white text-sm font-bold py-2 px-8 rounded shadow border border-white/20 transition-transform active:scale-95">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-3" class="hidden animate-fade-in">
+            <h1 class="text-center text-2xl font-bold text-plm-navy mb-8 uppercase tracking-wide">ENROLLMENT CONFIRMATION</h1>
+            <div class="overflow-x-auto border border-plm-gold mb-0 shadow-sm">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-[#7F1D1D] text-white uppercase text-xs font-bold">
+                    <tr>
+                        <th class="py-2.5 px-3 border-r border-[#B8860B] w-10 text-center">#</th>
+                        <th class="py-2.5 px-3 border-r border-[#B8860B] w-32">Subject Code</th>
+                        <th class="py-2.5 px-3 border-r border-[#B8860B]">Description</th>
+                        <th class="py-2.5 px-3 border-r border-[#B8860B] w-16 text-center">Units</th>
+                        <th class="py-2.5 px-3">Schedule</th>
+                    </tr>
+                    </thead>
+                    <tbody id="confirmation-table-body" class="text-gray-900 bg-white">
+                    </tbody>
+                    <tfoot class="border-t-2 border-plm-gold font-bold bg-gray-50 text-gray-900">
+                    <tr>
+                        <td colspan="3" class="py-3 px-3 border-r border-plm-gold text-right uppercase text-gray-600">Total Units</td>
+                        <td class="py-3 px-3 border-r border-plm-gold text-center text-lg" id="final-units">0</td>
+                        <td class="py-3 px-3 text-xs text-gray-500 font-normal">
+                            Date: <span id="reg-date" class="font-bold text-black"></span>
+                        </td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-4 border-t border-gray-200 pt-6">
+                <button id="btn-cancel-step3" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-2.5 px-8 rounded shadow transition-transform active:scale-95">Cancel</button>
+                <button id="btn-enroll" class="bg-[#1e1e2f] hover:bg-plm-navy text-white text-sm font-bold py-2.5 px-10 rounded shadow-lg transition-transform active:scale-95">Enroll</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300 border border-gray-200">
+            <div class="text-center">
+                <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+                <h3 id="modal-title" class="text-lg leading-6 font-bold text-gray-900 mb-2"></h3>
+                <p id="modal-message" class="text-sm text-gray-500"></p>
+            </div>
+            <div class="mt-5 sm:mt-6">
+                <button id="modal-close" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-plm-navy text-base font-medium text-white hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-plm-navy sm:text-sm transition-colors">OK</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="enrollment.ts"></script>
+</body>
+</html>

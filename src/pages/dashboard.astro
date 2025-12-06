@@ -1,228 +1,218 @@
 ---
-// --- 1. IMPORTS ---
-import plmLogo from "../assets/PLMLogo.webp";
-import "../styles/global.css";
-import { Image } from "astro:assets";
+import Layout from '../layouts/Layout.astro';
+import "../styles/global.css"; // Assuming this handles your Tailwind setup
 
-// --- 2. TYPE DEFINITIONS (The Contract) ---
-// This defines what data the UI expects, whether from a fake file or real DB.
-interface StudentProfile {
-    firstName: string;
-    lastName: string;
-    studentId: string;
-    email: string;
-    college: string;
-    course: string;
-    yearLevel: string;
-    status: "Regular" | "Irregular" | "Conditional";
-    isEnrolled: boolean;
-    currentSemester: string;
-    gwa: number;
-    progress: number;
-    // New fields required for the Desktop UI stats
-    units: {
-        totalEarned: number;
-        academic: number;
-        nonAcademic: number;
-    };
-}
-
-// --- 3. SIMULATED BACKEND FUNCTION ---
-// Currently returns temp info. Later, you can put a 'fetch()' here.
-async function fetchStudentProfile(): Promise<StudentProfile> {
-    
-    // Simulate network delay (optional)
-    // await new Promise(resolve => setTimeout(resolve, 50));
-
-    return {
-        firstName: "EMMANUEL A.",
-        lastName: "PEREZ",
-        studentId: "202390029",
-        email: "eaperez2023@plm.edu.ph",
-        college: "College of Information System and Technology Management - Undergraduate",
-        course: "Bachelor of Science in Computer Science",
-        yearLevel: "Second Year",
-        status: "Irregular",
-        isEnrolled: true,
-        currentSemester: "School Year 2025-2026 First Semester",
-        gwa: 1.45608,
-        progress: 43,
-        units: {
-            totalEarned: 95,
-            academic: 89,
-            nonAcademic: 6
-        }
-    };
-}
-
-// --- 4. EXECUTE DATA FETCH ---
-const studentData = await fetchStudentProfile();
-
-// Helper to format money (kept from your original code, in case needed later)
-const formatCurrency = (val: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(val);
+// --- NOTE: EnrollmentTable is not imported here because we render its HTML string client-side ---
 ---
 
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLM Student Portal</title>
-    <link rel="icon" href={plmLogo.src} />
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
-
-    <header class="w-full bg-white shadow-sm z-50">
-
-        <div class="flex justify-center py-4">
-            <div class="w-15 h-15">
-                 <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
-            </div>
+<Layout>
+    <div class="w-full max-w-7xl p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-blue-900">Enrollment Portal</h1>
+            <button id="logoutBtn" class="text-red-600 font-bold hover:underline">Logout</button>
         </div>
-    <div class="h-5 w-full bg-plm-navy border-b-9 border-[#991B1B]"></div>
-        <nav class="border-y border-gray-200 py-2">
-            <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-12 text-sm font-medium text-gray-700">
-                <a href="#" class="bg-plm-navy text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all">
-                    Home
-                </a>
 
-                <a href="/student_schedule" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Schedule
-                </a>
+        <div id="loading-spinner" class="text-center py-12 text-gray-500">
+            Loading Enrollment Data...
+        </div>
 
-                <a href="/grade" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Grade
-                </a>
+        <div id="enrollment-portal-wrapper" class="hidden">
 
-                <a href="/enrollment" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Enrollment
-                </a>
+            <div id="enrollment-status-card" class="flex justify-center mb-4"></div>
 
-                <a href="/personalinfo" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Personal Info
-                </a>
+            <div id="interactive-enrollment-content"></div>
 
-                <a href="/change-password" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Change Password
-                </a>
-
-            </div>
-        </nav>
-
-        <div class="bg-white border-b border-plm-gold/50 py-2">
-            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
-                <span class="text-gray-800">
-                    Signed in as: <span class="font-bold uppercase">{studentData.lastName}, {studentData.firstName}</span> <span class=" font-bold">({studentData.studentId})</span>
+            <div class="w-full bg-[#7F1D1D] text-white py-3 px-6 flex justify-between items-center shadow-md mt-0 rounded-b-md">
+                <span class="font-bold text-sm">
+                    Total Units Selected: <span id="units-selected" class="text-lg ml-2 font-mono font-bold">0</span>
                 </span>
-                <button class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</button>
+                <button id="submit-enrollment" class="bg-blue-900 text-white font-bold py-2 px-6 rounded hover:bg-blue-800 transition">
+                    Submit Draft Enrollment
+                </button>
             </div>
         </div>
-    </header>
+    </div>
+</Layout>
 
-    <main class="flex-grow w-full max-w-7xl mx-auto p-6 md:p-10">
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<script>
+    import { apiRequest } from "../lib/api.ts";
 
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 relative">
-                <h2 class="text-2xl font-bold uppercase text-gray-900 mb-6">Student Information</h2>
-                
-                <div class="flex flex-col-reverse md:flex-row gap-6">
-                    <div class="flex-1 space-y-3 text-sm text-gray-700">
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Student ID No.</span>
-                            <span class="font-bold text-black">: {studentData.studentId}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Student Name</span>
-                            <span class="font-bold text-black uppercase">: {studentData.lastName}, {studentData.firstName}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Program/Degree</span>
-                            <span>: {studentData.course}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">College</span>
-                            <span>: {studentData.college}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">PLM Email</span>
-                            <span>: {studentData.email}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Year Level</span>
-                            <span>: {studentData.yearLevel}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Registration Status</span>
-                            <span>: {studentData.status}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr] items-start pt-2">
-                            <span class="font-semibold text-gray-600">Enrollment Status</span>
-                            <div>
-                                : <span class={`font-bold uppercase ${studentData.isEnrolled ? 'text-red-600' : 'text-gray-500'}`}>
-                                    {studentData.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED'}
-                                  </span> 
-                                <span class="text-gray-500 text-xs block mt-0.5">for {studentData.currentSemester}</span>
-                            </div>
-                        </div>
-                    </div>
+    // --- STATE ---
+    let selectedSectionIds = new Set(); // Stores sectionNo (number)
+    let availableSectionsData = [];    // Stores the fetched SectionDTO objects
 
-                    <div class="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 bg-gray-200 rounded-md overflow-hidden border border-gray-300 self-start">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${studentData.firstName}`} alt="Profile" class="w-full h-full object-cover opacity-80" />
-                    </div>
+    // --- UTILITIES (Pulled from EnrollmentTable styling) ---
+    const statusColor = (status) => {
+        switch (status) {
+            case 'OPEN': return 'text-green-600 font-bold';
+            case 'FULL': return 'text-red-600 font-bold';
+            default: return 'text-gray-500';
+        }
+    }
+    const enrollmentStatusColor = (status) => {
+        switch (status) {
+            case 'ENROLLED': return 'text-green-700 bg-green-100 border-green-300';
+            case 'DRAFT': return 'text-yellow-700 bg-yellow-100 border-yellow-300';
+            case 'REJECTED': return 'text-red-700 bg-red-100 border-red-300';
+            default: return 'text-gray-700 bg-gray-100 border-gray-300';
+        }
+    }
+
+    // --- 1. RENDER LOGIC (Generates HTML for the table) ---
+
+    function generateInteractiveTableHTML(data) {
+        const sections = data.sections || [];
+        const tableRows = sections.map((sec, index) => {
+            const isOpen = sec.status === 'OPEN';
+
+            return `
+            <tr class="border-b border-plm-gold/30 hover:bg-gray-50 transition-colors ${!isOpen ? 'opacity-60 bg-gray-100' : ''}">
+                <td class="py-2 px-3 border-r border-plm-gold/50 text-center">
+                    <input type="checkbox" 
+                        class="enrollment-checkbox w-4 h-4 text-plm-navy rounded border-gray-300 focus:ring-plm-navy cursor-pointer"
+                        value="${sec.sectionNo}" 
+                        data-units="${sec.units}"
+                        ${!isOpen ? 'disabled' : ''} />
+                </td>
+                <td class="py-2 px-3 border-r border-plm-gold/50 font-bold">${sec.subjectCode}</td>
+                <td class="py-2 px-3 border-r border-plm-gold/50 uppercase font-medium">
+                    ${sec.subjectTitle}
+                    <div class="text-xs text-gray-500 font-normal">(${sec.sectionName})</div>
+                </td>
+                <td class="py-2 px-3 border-r border-plm-gold/50 text-center font-bold">${sec.units}</td>
+                <td class="py-2 px-3 border-r border-plm-gold/50 text-xs">${sec.schedule}</td>
+                <td class="py-2 px-3 ${statusColor(sec.status)} text-xs font-bold">${sec.status}</td>
+            </tr>
+            `;
+        }).join('');
+
+        return `
+            <h2 class="text-lg font-bold text-plm-navy mb-2 uppercase border-b-2 border-plm-gold inline-block pb-1">
+                ${data.termName || 'Loading Term'} - Select Sections
+            </h2>
+            <div class="overflow-x-auto border border-plm-gold shadow-sm">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-[#7F1D1D] text-white uppercase text-xs font-bold">
+                        <tr>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B] w-10 text-center">#</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B] w-24">Subject Code</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B]">Description (Section)</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B] w-16 text-center">Units</th>
+                            <th class="py-2.5 px-3 border-r border-[#B8860B]">Schedule</th>
+                            <th class="py-2.5 px-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="interactive-tbody">${tableRows}</tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function generateStatusCardHTML(data) {
+        return `
+            <div class="flex justify-center mb-4">
+                <div class="text-sm py-2 px-4 rounded-lg border-2 shadow-md ${enrollmentStatusColor(data.enrollmentStatus)}">
+                    <span class="font-bold">Current Status:</span> 
+                    <span class="uppercase">${data.enrollmentStatus || 'NONE'}</span>
+                    ${data.remarks ? `<span class="block text-xs italic opacity-80 mt-1">Remarks: ${data.remarks}</span>` : ''}
                 </div>
             </div>
+        `;
+    }
 
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">Overall Student Progress</h2>
+    // --- 2. FETCH & INITIALIZE ---
+    async function loadData() {
+        const portalWrapper = document.getElementById('enrollment-portal-wrapper');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const statusCard = document.getElementById('enrollment-status-card');
+        const contentWrapper = document.getElementById('interactive-enrollment-content');
 
-                <div class="flex flex-col md:flex-row items-center gap-8">
-                    
-                    <div class="relative w-40 h-40 flex-shrink-0">
-                        <div class="w-full h-full rounded-full" 
-                             style={`background: conic-gradient(#002d72 ${studentData.progress}%, #e5e7eb 0);`}>
-                        </div>
-                        <div class="absolute inset-4 bg-white rounded-full flex items-center justify-center flex-col">
-                            <span class="text-3xl font-bold text-plm-navy">{studentData.progress}%</span>
-                        </div>
-                    </div>
+        if (loadingSpinner) loadingSpinner.classList.remove('hidden');
 
-                    <div class="flex-1 space-y-4 text-sm">
-                        <p class="text-gray-600">
-                            You've completed <span class="font-bold text-black">{studentData.progress}%</span> of your classes' overall assigned curriculum.
-                        </p>
-                        
-                        <p class="text-gray-600">
-                            Your can view the details in <span class="font-bold text-black">My Grades Curriculum/Prospectus.</span>
-                        </p>
+        try {
+            const data = await apiRequest("/enrollment/options", "GET");
+            availableSectionsData = data.sections || [];
 
-                        <div class="space-y-1 pt-2">
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Overall GWA :</span>
-                                <span class="font-bold">{studentData.gwa.toFixed(5)}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Actual Total Units Earned :</span>
-                                <span class="font-bold">{studentData.units.totalEarned}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Academic Units :</span>
-                                <span class="font-bold">{studentData.units.academic}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Non-Academic Units :</span>
-                                <span class="font-bold">{studentData.units.nonAcademic}</span>
-                            </div>
-                        </div>
-                    </div>
+            // 1. Render Status Card
+            if (statusCard) statusCard.innerHTML = generateStatusCardHTML(data);
 
-                </div>
-            </div>
+            // 2. Render Interactive Table
+            if (contentWrapper) contentWrapper.innerHTML = generateInteractiveTableHTML(data);
 
-        </div>
+            // 3. Attach Listeners to the newly injected HTML
+            attachEnrollmentListeners();
 
-    </main>
-    
-    <script src="../scripts/navigation.ts"></script>
-</body>
-</html>
+        } catch (e) {
+            console.error("Dashboard Load Error:", e);
+            if(contentWrapper) contentWrapper.innerHTML = `<p class="text-red-600 font-bold py-12 text-center">Error fetching data. Check console for API errors.</p>`;
+        } finally {
+            if (loadingSpinner) loadingSpinner.classList.add('hidden');
+            if (portalWrapper) portalWrapper.classList.remove('hidden');
+        }
+    }
+
+    // --- 3. INTERACTIVITY & SUBMISSION ---
+
+    function attachEnrollmentListeners() {
+        const unitsSelectedDisplay = document.getElementById('units-selected');
+
+        // 1. Checkbox listener for adding/removing sections
+        document.querySelectorAll('.enrollment-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const target = e.target;
+                const sectionId = parseInt(target.value);
+
+                if (target.checked) {
+                    selectedSectionIds.add(sectionId);
+                } else {
+                    selectedSectionIds.delete(sectionId);
+                }
+
+                // Recalculate and display total units
+                let currentTotalUnits = 0;
+                document.querySelectorAll('.enrollment-checkbox:checked').forEach(checkedBox => {
+                    currentTotalUnits += parseInt(checkedBox.getAttribute('data-units') || '0');
+                });
+                if (unitsSelectedDisplay) unitsSelectedDisplay.textContent = currentTotalUnits.toString();
+            });
+        });
+
+        // 2. Submission Button Listener
+        document.getElementById('submit-enrollment')?.addEventListener('click', async () => {
+            if (selectedSectionIds.size === 0) {
+                alert("Please select at least one section.");
+                return;
+            }
+
+            const submissionData = {
+                // Convert the Set of numbers to an array of Longs for the backend DTO
+                sectionIds: Array.from(selectedSectionIds).map(id => Number(id))
+            };
+
+            console.log("Submitting enrollment:", submissionData);
+
+            try {
+                // POST to the backend endpoint: /api/enrollment/submit
+                const response = await apiRequest("/enrollment/submit", "POST", submissionData);
+
+                // Success handler
+                alert(`Success! ${response.message}. The page will now reload.`);
+                window.location.reload();
+
+            } catch (error) {
+                console.error("Submission failed:", error);
+                alert(`Submission Failed: ${error.message}`);
+            }
+        });
+    }
+
+    // --- 4. LOGOUT ---
+    document.getElementById("logoutBtn")?.addEventListener("click", () => {
+        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("user_profile");
+        window.location.href = "/login";
+    });
+
+    // START APPLICATION
+    loadData();
+</script>

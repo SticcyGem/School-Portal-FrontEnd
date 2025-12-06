@@ -1,0 +1,166 @@
+---
+import Layout from '../layouts/Layout.js'; // Assuming you have a Layout file
+import plmLogo from "../assets/PLMLogo.webp"; // [cite: 1]
+import { Image } from "astro:assets"; // [cite: 1]
+// --- REMOVE all server-side fetch logic (3 & 4) ---
+// --- Keep only imports and layout components
+---
+
+<Layout>
+    <header class="w-full bg-white shadow-sm z-50">
+        <div class="bg-white border-b border-plm-gold/50 py-2">
+            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+                <span class="text-gray-800">
+                    Signed in as: <span class="font-bold uppercase" id="header-name">LOADING...</span>
+                    <span class="font-bold" id="header-id">(ID: -----)</span>
+                </span>
+                <button id="signOutBtn" class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto p-6 md:p-10">
+        <h1 class="text-center text-2xl font-bold text-plm-navy mb-8 uppercase tracking-wide" id="loading-status">Loading Dashboard Data...</h1>
+
+        <div id="dashboard-content" class="grid grid-cols-1 lg:grid-cols-2 gap-8 hidden">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                <h2 class="text-2xl font-bold uppercase text-gray-900 mb-6">Student Information</h2>
+                <div class="flex flex-col-reverse md:flex-row gap-6">
+                    <div class="flex-1 space-y-3 text-sm text-gray-700">
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">Student ID No.</span><span class="font-bold text-black" id="info-id"></span></div>
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">Student Name</span><span class="font-bold text-black uppercase" id="info-name"></span></div>
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">Program/Degree</span><span id="info-course"></span></div>
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">College</span><span id="info-college"></span></div>
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">PLM Email</span><span id="info-email"></span></div>
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">Year Level</span><span id="info-year"></span></div>
+                        <div class="grid grid-cols-[140px_1fr]"><span class="font-semibold text-gray-600">Registration Status</span><span id="info-status"></span></div>
+                        <div class="grid grid-cols-[140px_1fr] items-start pt-2"><span class="font-semibold text-gray-600">Enrollment Status</span><span id="info-enrollment"></span></div>
+                    </div>
+                    <div id="profile-img-container" class="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 bg-gray-200 rounded-md overflow-hidden border border-gray-300 self-start"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Overall Student Progress</h2>
+                <div class="flex flex-col md:flex-row items-center gap-8">
+                    <div class="relative w-40 h-40 flex-shrink-0">
+                        <div id="progress-circle" class="w-full h-full rounded-full" style="background: conic-gradient(#002d72 0%, #e5e7eb 0);"></div>
+                        <div class="absolute inset-4 bg-white rounded-full flex items-center justify-center flex-col"><span class="text-3xl font-bold text-plm-navy" id="progress-percent">0%</span></div>
+                    </div>
+                    <div class="flex-1 space-y-4 text-sm">
+                        <p class="text-gray-600">You've completed <span class="font-bold text-black" id="progress-text">0%</span> of your curriculum.</p>
+                        <div class="space-y-1 pt-2">
+                            <div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-semibold text-gray-600">Overall GWA :</span><span class="font-bold" id="gwa-val"></span></div>
+                            <div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-semibold text-gray-600">Total Units Earned :</span><span class="font-bold" id="units-total"></span></div>
+                            <div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-semibold text-gray-600">Academic Units :</span><span class="font-bold" id="units-academic"></span></div>
+                            <div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-semibold text-gray-600">Non-Academic Units :</span><span class="font-bold" id="units-non"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<script>
+    import { apiRequest } from '../lib/api.ts';
+    // We keep apiRequest for the logout feature
+
+    // --- Minimal Profile Structure from Login Payload ---
+    // Note: The structure depends on the user's role (see AuthService.kt)
+    interface BasicProfile {
+        firstName: string;
+        lastName: string;
+        // ... other basic fields if provided on login ...
+    }
+
+    // --- Data Mapping Function ---
+    function readAndRenderProfile() {
+        const profileJson = localStorage.getItem('user_profile');
+        const loadingStatus = document.getElementById('loading-status');
+        const dashboardContent = document.getElementById('dashboard-content');
+
+        if (!profileJson) {
+            alert("Profile data missing. Please log in again.");
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            // Parse the stored profile data (which contains UserProfile info + maybe Student/Professor detail view)
+            const profileData = JSON.parse(profileJson);
+
+            // --- DATA AGGREGATION (Using stored data + mock data) ---
+            const dataToRender = {
+                firstName: profileData.firstName || profileData.name.split(', ')[1] || 'N/A',
+                lastName: profileData.lastName || profileData.name.split(', ')[0] || 'N/A',
+                studentId: profileData.studentId || profileData.professorId || 'ID PENDING',
+                email: profileData.email || 'N/A',
+                college: profileData.college || 'College of Information Systems',
+                course: profileData.course || 'N/A',
+                yearLevel: profileData.yearLevel || 'Second Year',
+                status: profileData.studentType || profileData.employeeType || 'Irregular',
+                isEnrolled: profileData.enrollmentStatus === 'ENROLLED',
+                currentSemester: 'School Year 2025-2026 First Semester',
+
+                // --- MOCK DATA for missing backend stats ---
+                gwa: 1.456,
+                progress: 43,
+                units: {
+                    totalEarned: 95,
+                    academic: 89,
+                    nonAcademic: 6
+                }
+            };
+
+            // --- RENDER LOGIC ---
+
+            // A. Update Header/Info Card
+            document.getElementById('header-name').innerText = `${dataToRender.lastName}, ${dataToRender.firstName}`;
+            document.getElementById('header-id').innerText = `(${dataToRender.studentId})`;
+
+            document.getElementById('info-id').innerText = `: ${dataToRender.studentId}`;
+            document.getElementById('info-name').innerText = `: ${dataToRender.lastName}, ${dataToRender.firstName}`;
+            document.getElementById('info-course').innerText = `: ${dataToRender.course}`;
+            document.getElementById('info-college').innerText = `: ${dataToRender.college}`;
+            document.getElementById('info-email').innerText = `: ${dataToRender.email}`;
+            document.getElementById('info-year').innerText = `: ${dataToRender.yearLevel}`;
+            document.getElementById('info-status').innerText = `: ${dataToRender.status}`;
+
+            const enrollmentStatusEl = document.getElementById('info-enrollment');
+            if (enrollmentStatusEl) {
+                const statusText = dataToRender.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED';
+                const statusClass = dataToRender.isEnrolled ? 'text-red-600' : 'text-gray-500';
+                enrollmentStatusEl.innerHTML = `: <span class="font-bold uppercase ${statusClass}">${statusText}</span> <span class="text-gray-500 text-xs block mt-0.5">for ${dataToRender.currentSemester}</span>`;
+            }
+
+            // B. Update Progress Card
+            const gwaValue = dataToRender.gwa.toFixed(5);
+            document.getElementById('progress-percent').innerText = `${dataToRender.progress}%`;
+            document.getElementById('progress-text').innerText = `${dataToRender.progress}%`;
+
+            const circle = document.getElementById('progress-circle');
+            if(circle) circle.style.background = `conic-gradient(#002d72 ${dataToRender.progress}%, #e5e7eb 0);`;
+
+            document.getElementById('gwa-val').innerText = gwaValue;
+            document.getElementById('units-total').innerText = dataToRender.units.totalEarned;
+            document.getElementById('units-academic').innerText = dataToRender.units.academic;
+            document.getElementById('units-non').innerText = dataToRender.units.nonAcademic;
+
+            // C. Final Cleanup
+            if (loadingStatus) loadingStatus.classList.add('hidden');
+            if (dashboardContent) dashboardContent.classList.remove('hidden');
+
+        } catch (e) {
+            console.error("Error mapping local storage data:", e);
+            if (loadingStatus) loadingStatus.innerText = "Error: Invalid profile data in local storage. Please relog.";
+        }
+    }
+
+    document.getElementById("signOutBtn")?.addEventListener("click", () => {
+        localStorage.clear(); // Clear all user data
+        window.location.href = "/login";
+    });
+
+    readAndRenderProfile();
+</script>
