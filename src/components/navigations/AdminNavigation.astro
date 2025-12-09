@@ -1,0 +1,41 @@
+---
+interface Props {
+    pendingCount?: number;
+}
+
+const { pendingCount = 0 } = Astro.props;
+const view = Astro.url.searchParams.get('view') || 'system';
+
+// Styles matching StudentNavigation.astro
+const activeClass = "bg-plm-navy text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all whitespace-nowrap";
+const inactiveClass = "px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all whitespace-nowrap";
+
+// Logic to check if we are in any management sub-view
+const isManagement = ['management', 'accounts', 'colleges', 'courses', 'subjects', 'blocks'].includes(view);
+---
+
+<nav class="border-b border-gray-200 bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-around md:justify-center md:gap-4 py-3 text-sm font-medium text-gray-700 overflow-x-auto">
+
+            <a href="?role=ADMIN&view=system" class={view === 'system' ? activeClass : inactiveClass}>
+                System Status
+            </a>
+
+            <!-- Updated Link -->
+            <a href="?role=ADMIN&view=subjects" class={isManagement ? activeClass : inactiveClass}>
+                Management
+            </a>
+
+            <a href="?role=ADMIN&view=enrollments" class={`flex items-center gap-2 ${view === 'enrollments' ? activeClass : inactiveClass}`}>
+                Enrollment Approvals
+                {pendingCount > 0 && (
+                        <span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">
+                        {pendingCount}
+                    </span>
+                )}
+            </a>
+
+        </div>
+    </div>
+</nav>

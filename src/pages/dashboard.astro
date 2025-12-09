@@ -1,228 +1,175 @@
 ---
-// --- 1. IMPORTS ---
-import plmLogo from "../assets/PLMLogo.webp";
 import "../styles/global.css";
-import { Image } from "astro:assets";
+import Header from "../components/Header.astro";
 
-// --- 2. TYPE DEFINITIONS (The Contract) ---
-// This defines what data the UI expects, whether from a fake file or real DB.
-interface StudentProfile {
-    firstName: string;
-    lastName: string;
-    studentId: string;
-    email: string;
-    college: string;
-    course: string;
-    yearLevel: string;
-    status: "Regular" | "Irregular" | "Conditional";
-    isEnrolled: boolean;
-    currentSemester: string;
-    gwa: number;
-    progress: number;
-    // New fields required for the Desktop UI stats
-    units: {
-        totalEarned: number;
-        academic: number;
-        nonAcademic: number;
-    };
+// --- NAVIGATION COMPONENTS ---
+import StudentNavigation from "../components/navigations/StudentNavigation.astro";
+import AdminNavigation from "../components/navigations/AdminNavigation.astro";
+//import ProfessorTopNav from "../components/navigations/ProfessorTopNav.astro";
+
+// --- DASHBOARD VIEWS ---
+import StudentDashboard from "../components/dashboards/StudentDashboard.astro";
+import AdminDashboard from "../components/dashboards/AdminDashboard.astro";
+import ProfessorDashboard from "../components/dashboards/ProfessorDashboard.astro";
+
+import type { Role, EnrollmentOfferingResponse, AdminEnrollmentDetailResponse } from "../types/api";
+
+// --- 1. SERVER-SIDE AUTH GUARD ---
+const tokenCookie = Astro.cookies.get('jwt_token');
+const token = tokenCookie?.value;
+
+if (!token) {
+    return Astro.redirect('/');
 }
 
-// --- 3. SIMULATED BACKEND FUNCTION ---
-// Currently returns temp info. Later, you can put a 'fetch()' here.
-async function fetchStudentProfile(): Promise<StudentProfile> {
-    
-    // Simulate network delay (optional)
-    // await new Promise(resolve => setTimeout(resolve, 50));
+// --- 2. GET USER CONTEXT ---
+const roleCookie = Astro.cookies.get('user_role');
+const currentRole = (roleCookie?.value || 'STUDENT') as Role;
 
-    return {
-        firstName: "EMMANUEL A.",
-        lastName: "PEREZ",
-        studentId: "202390029",
-        email: "eaperez2023@plm.edu.ph",
-        college: "College of Information System and Technology Management - Undergraduate",
-        course: "Bachelor of Science in Computer Science",
-        yearLevel: "Second Year",
-        status: "Irregular",
-        isEnrolled: true,
-        currentSemester: "School Year 2025-2026 First Semester",
-        gwa: 1.45608,
-        progress: 43,
-        units: {
-            totalEarned: 95,
-            academic: 89,
-            nonAcademic: 6
+// Hydrate profile from cookie
+let userProfile: any = {};
+try {
+    const profileCookie = Astro.cookies.get('user_profile');
+    if (profileCookie?.value) {
+        userProfile = JSON.parse(atob(profileCookie.value));
+    }
+} catch (e) {
+    console.error("Failed to parse profile cookie");
+}
+
+// --- ROBUST NAME PARSING (Fixes USER, USER issue) ---
+let firstName = "";
+let lastName = "";
+
+// Check for composite name (Student/Admin often have this)
+const fullName = userProfile.student_name || userProfile.name || userProfile.professor_name;
+
+if (fullName && fullName.includes(',')) {
+    // Format: "Lastname, Firstname M."
+    const parts = fullName.split(',');
+    lastName = parts[0].trim(); // "Lastname"
+
+    // Handle First Name + potential Middle Initial
+    const rest = parts[1].trim(); // "Firstname M."
+    const nameParts = rest.split(' ');
+
+    // Heuristic: If last part ends in dot or is single letter, it's likely Middle Initial
+    if (nameParts.length > 1 && (nameParts[nameParts.length-1].endsWith('.') || nameParts[nameParts.length-1].length === 1)) {
+        // Remove Middle Initial for the "First Name" display
+        nameParts.pop();
+        firstName = nameParts.join(' ');
+    } else {
+        firstName = rest;
+    }
+} else {
+    // Fallback to explicit fields or defaults
+    firstName = userProfile.firstName || userProfile.first_name || "User";
+    lastName = userProfile.lastName || userProfile.last_name || "User";
+}
+
+// Determine the correct ID to display based on role
+let displayId = "N/A";
+if (currentRole === 'STUDENT') {
+    displayId = userProfile.studentNo || userProfile.student_no || "N/A";
+} else if (currentRole === 'PROFESSOR') {
+    displayId = userProfile.professorId || userProfile.professor_id || "N/A";
+} else if (currentRole === 'ADMIN') {
+    displayId = "ADMIN";
+}
+
+// --- 3. DATA FETCHING ---
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+let dashboardData: any = null;
+let fetchError = null;
+
+try {
+    let endpoint = "";
+    if (currentRole === 'STUDENT') endpoint = `${API_BASE}/api/enrollment/options`;
+    else if (currentRole === 'ADMIN') endpoint = `${API_BASE}/api/admin/enrollments/pending`;
+
+    if (endpoint) {
+        const response = await fetch(endpoint, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (response.ok) {
+            const json = await response.json();
+            if (json.success) dashboardData = json.data;
+        } else {
+            console.warn(`Backend Error ${response.status}:`, await response.text());
         }
-    };
+    }
+} catch (e) {
+    console.error("Backend unreachable:", e);
+    fetchError = "Could not connect to server.";
 }
 
-// --- 4. EXECUTE DATA FETCH ---
-const studentData = await fetchStudentProfile();
+if (!dashboardData && currentRole === 'ADMIN') dashboardData = [];
 
-// Helper to format money (kept from your original code, in case needed later)
-const formatCurrency = (val: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(val);
+// --- 4. STUDENT LINKS (Still passed as props) ---
+const studentLinks = [
+    { label: "Home", href: "/dashboard" },
+    { label: "Schedule", href: "/student/schedule" },
+    { label: "Grades", href: "/student/grades" },
+    { label: "Enrollment", href: "/student/enrollment" },
+];
+
+// Helper to count pending items for Admin Badge
+const adminPendingCount = currentRole === 'ADMIN' && Array.isArray(dashboardData) ? dashboardData.length : 0;
 ---
 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLM Student Portal</title>
-    <link rel="icon" href={plmLogo.src} />
+    <title>Dashboard - {currentRole}</title>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans text-gray-800">
 
-    <header class="w-full bg-white shadow-sm z-50">
+<!-- Pass the correctly mapped variables to Header -->
+<Header
+        firstName={firstName}
+        lastName={lastName}
+        studentId={displayId.toString()}
+/>
 
-        <div class="flex justify-center py-4">
-            <div class="w-15 h-15">
-                 <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+<!-- ROLE-BASED NAVIGATION SWITCHER -->
+{currentRole === 'STUDENT' && <StudentNavigation links={studentLinks} />}
+{currentRole === 'ADMIN' && <AdminNavigation pendingCount={adminPendingCount} />}
+<!-- {currentRole === 'PROFESSOR' && <ProfessorTopNav />} -->
+
+<main class="flex-grow w-full max-w-7xl mx-auto p-4 md:p-8">
+
+    {fetchError && (
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                <span>{fetchError}</span>
             </div>
-        </div>
-    <div class="h-5 w-full bg-plm-navy border-b-9 border-[#991B1B]"></div>
-        <nav class="border-y border-gray-200 py-2">
-            <div class="max-w-7xl mx-auto px-4 flex justify-around md:justify-center md:gap-12 text-sm font-medium text-gray-700">
-                <a href="#" class="bg-plm-navy text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all">
-                    Home
-                </a>
+    )}
 
-                <a href="/student_schedule" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Schedule
-                </a>
+    {currentRole === 'STUDENT' && dashboardData && (
+            <StudentDashboard
+                    data={dashboardData}
+                    studentName={`${firstName} ${lastName}`}
+            />
+    )}
 
-                <a href="/grade" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Grade
-                </a>
+    {currentRole === 'ADMIN' && (
+            <AdminDashboard
+                    pendingEnrollments={Array.isArray(dashboardData) ? dashboardData : []}
+            />
+    )}
 
-                <a href="/enrollment" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Enrollment
-                </a>
-
-                <a href="/personalinfo" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Personal Info
-                </a>
-
-                <a href="/change-password" class="px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/20 transition-all">
-                    Change Password
-                </a>
-
-            </div>
-        </nav>
-
-        <div class="bg-white border-b border-plm-gold/50 py-2">
-            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
-                <span class="text-gray-800">
-                    Signed in as: <span class="font-bold uppercase">{studentData.lastName}, {studentData.firstName}</span> <span class=" font-bold">({studentData.studentId})</span>
-                </span>
-                <button class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide">SIGN OUT</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="flex-grow w-full max-w-7xl mx-auto p-6 md:p-10">
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 relative">
-                <h2 class="text-2xl font-bold uppercase text-gray-900 mb-6">Student Information</h2>
-                
-                <div class="flex flex-col-reverse md:flex-row gap-6">
-                    <div class="flex-1 space-y-3 text-sm text-gray-700">
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Student ID No.</span>
-                            <span class="font-bold text-black">: {studentData.studentId}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Student Name</span>
-                            <span class="font-bold text-black uppercase">: {studentData.lastName}, {studentData.firstName}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Program/Degree</span>
-                            <span>: {studentData.course}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">College</span>
-                            <span>: {studentData.college}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">PLM Email</span>
-                            <span>: {studentData.email}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Year Level</span>
-                            <span>: {studentData.yearLevel}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr]">
-                            <span class="font-semibold text-gray-600">Registration Status</span>
-                            <span>: {studentData.status}</span>
-                        </div>
-                        <div class="grid grid-cols-[140px_1fr] items-start pt-2">
-                            <span class="font-semibold text-gray-600">Enrollment Status</span>
-                            <div>
-                                : <span class={`font-bold uppercase ${studentData.isEnrolled ? 'text-red-600' : 'text-gray-500'}`}>
-                                    {studentData.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED'}
-                                  </span> 
-                                <span class="text-gray-500 text-xs block mt-0.5">for {studentData.currentSemester}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 bg-gray-200 rounded-md overflow-hidden border border-gray-300 self-start">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${studentData.firstName}`} alt="Profile" class="w-full h-full object-cover opacity-80" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">Overall Student Progress</h2>
-
-                <div class="flex flex-col md:flex-row items-center gap-8">
-                    
-                    <div class="relative w-40 h-40 flex-shrink-0">
-                        <div class="w-full h-full rounded-full" 
-                             style={`background: conic-gradient(#002d72 ${studentData.progress}%, #e5e7eb 0);`}>
-                        </div>
-                        <div class="absolute inset-4 bg-white rounded-full flex items-center justify-center flex-col">
-                            <span class="text-3xl font-bold text-plm-navy">{studentData.progress}%</span>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 space-y-4 text-sm">
-                        <p class="text-gray-600">
-                            You've completed <span class="font-bold text-black">{studentData.progress}%</span> of your classes' overall assigned curriculum.
-                        </p>
-                        
-                        <p class="text-gray-600">
-                            Your can view the details in <span class="font-bold text-black">My Grades Curriculum/Prospectus.</span>
-                        </p>
-
-                        <div class="space-y-1 pt-2">
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Overall GWA :</span>
-                                <span class="font-bold">{studentData.gwa.toFixed(5)}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Actual Total Units Earned :</span>
-                                <span class="font-bold">{studentData.units.totalEarned}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Academic Units :</span>
-                                <span class="font-bold">{studentData.units.academic}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-100 pb-1">
-                                <span class="font-semibold text-gray-600">Non-Academic Units :</span>
-                                <span class="font-bold">{studentData.units.nonAcademic}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-
-    </main>
-    
-    <script src="../scripts/navigation.ts"></script>
+    {currentRole === 'PROFESSOR' && (
+            <ProfessorDashboard
+                    professorName={`${firstName} ${lastName}`}
+                    department={userProfile.department || "Faculty Department"}
+            />
+    )}
+</main>
 </body>
 </html>

@@ -1,0 +1,213 @@
+<div id="review-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh] transform transition-transform scale-95">
+
+        <!-- HEADER -->
+        <div class="bg-plm-navy px-6 py-4 rounded-t-xl flex justify-between items-center shrink-0">
+            <div>
+                <h3 class="text-white font-bold text-lg">Enrollment Application</h3>
+                <p class="text-plm-gold text-xs font-mono uppercase tracking-wider" id="review-term">Term Name</p>
+            </div>
+            <button onclick="closeReviewModal()" class="text-white/70 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- BODY -->
+        <div class="p-6 overflow-y-auto space-y-6">
+            <input type="hidden" id="review-enrollment-id" />
+
+            <!-- Student Info -->
+            <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="bg-gray-200 h-12 w-12 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 text-lg" id="review-student-name">Student Name</h4>
+                    <div class="flex gap-4 text-sm text-gray-600">
+                        <span class="font-mono" id="review-student-id">202X-XXXXX</span>
+                        <span class="text-gray-300">|</span>
+                        <span class="font-bold text-plm-navy" id="review-course">BSCS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Table -->
+            <div>
+                <h5 class="text-xs font-bold text-gray-500 uppercase mb-2">Requested Schedule</h5>
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 text-gray-600 font-bold text-xs uppercase">
+                        <tr>
+                            <th class="px-4 py-2">Code</th>
+                            <th class="px-4 py-2">Subject</th>
+                            <th class="px-4 py-2">Schedule</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="review-table-body">
+                        <!-- Dynamic Rows -->
+                        </tbody>
+                        <tfoot class="bg-gray-50 font-bold text-gray-700">
+                        <tr>
+                            <td colspan="2" class="px-4 py-2 text-right uppercase text-xs">Total Units:</td>
+                            <td class="px-4 py-2" id="review-total-units">0</td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Rejection Reason Input (Hidden by default) -->
+            <div id="reject-panel" class="hidden animate-fade-in bg-red-50 p-4 rounded-lg border border-red-100">
+                <label for="reject-reason" class="block text-xs font-bold text-red-700 uppercase mb-1">Reason for Rejection <span class="text-red-500">*</span></label>
+                <textarea id="reject-reason" rows="2" class="w-full border border-red-200 rounded p-2 text-sm focus:ring-1 focus:ring-red-500 outline-none resize-none" placeholder="e.g. Missing prerequisites, schedule conflict..."></textarea>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100 rounded-b-xl shrink-0">
+            <!-- Initial Buttons -->
+            <div id="action-buttons" class="flex gap-3">
+                <button onclick="toggleReject()" class="px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50 rounded border border-transparent hover:border-red-100 transition-colors">Reject Application</button>
+                <button onclick="submitDecision('APPROVE')" class="px-6 py-2 text-sm text-white bg-green-600 font-bold rounded shadow hover:bg-green-700 transition-all">Approve Enrollment</button>
+            </div>
+
+            <!-- Confirm Reject Buttons -->
+            <div id="confirm-reject-buttons" class="hidden gap-3">
+                <button onclick="toggleReject()" class="px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded">Cancel</button>
+                <button onclick="submitDecision('REJECT')" class="px-6 py-2 text-sm text-white bg-red-600 font-bold rounded shadow hover:bg-red-700 transition-all">Confirm Rejection</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('review-modal');
+    const idInput = document.getElementById('review-enrollment-id') as HTMLInputElement;
+    const nameEl = document.getElementById('review-student-name');
+    const studentIdEl = document.getElementById('review-student-id');
+    const courseEl = document.getElementById('review-course');
+    const termEl = document.getElementById('review-term');
+    const tableBody = document.getElementById('review-table-body');
+    const totalUnitsEl = document.getElementById('review-total-units');
+
+    const rejectPanel = document.getElementById('reject-panel');
+    const actionBtns = document.getElementById('action-buttons');
+    const confirmRejectBtns = document.getElementById('confirm-reject-buttons');
+    const rejectReasonInput = document.getElementById('reject-reason') as HTMLTextAreaElement;
+
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+    function getToken() { return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2]; }
+
+    // @ts-ignore
+    window.openReviewModal = (data) => {
+        if(!modal) return;
+
+        // Populate Header
+        idInput.value = data.enrollment_no;
+        if(nameEl) nameEl.textContent = data.student_name;
+        if(studentIdEl) studentIdEl.textContent = data.student_id;
+        if(courseEl) courseEl.textContent = data.course_code;
+        if(termEl) termEl.textContent = data.term_name;
+        if(totalUnitsEl) totalUnitsEl.textContent = data.total_units;
+
+        // Populate Table
+        if(tableBody) {
+            tableBody.innerHTML = '';
+            if (data.sections && Array.isArray(data.sections)) {
+                data.sections.forEach((sec: any) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium text-plm-navy">${sec.subjectCode || sec.subject_code}</td>
+                        <td class="px-4 py-3 text-gray-700">${sec.subjectTitle || sec.subject_title}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-gray-500">${sec.schedule}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+        }
+
+        // Reset UI State
+        if(rejectPanel) rejectPanel.classList.add('hidden');
+        if(actionBtns) actionBtns.classList.remove('hidden');
+        if(confirmRejectBtns) confirmRejectBtns.classList.add('hidden');
+        if(rejectReasonInput) rejectReasonInput.value = "";
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div')?.classList.remove('scale-95');
+        }, 10);
+    };
+
+    // @ts-ignore
+    window.closeReviewModal = () => {
+        if(!modal) return;
+        modal.classList.add('opacity-0');
+        modal.querySelector('div')?.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+
+    // @ts-ignore
+    window.toggleReject = () => {
+        if(!rejectPanel || !actionBtns || !confirmRejectBtns) return;
+
+        const isRejecting = rejectPanel.classList.contains('hidden');
+
+        if (isRejecting) {
+            rejectPanel.classList.remove('hidden');
+            actionBtns.classList.add('hidden');
+            confirmRejectBtns.classList.remove('hidden');
+            rejectReasonInput?.focus();
+        } else {
+            rejectPanel.classList.add('hidden');
+            actionBtns.classList.remove('hidden');
+            confirmRejectBtns.classList.add('hidden');
+        }
+    };
+
+    // @ts-ignore
+    window.submitDecision = async (decision) => {
+        const id = idInput.value;
+        const token = getToken();
+        if(!token) { alert("Session expired."); return; }
+
+        try {
+            let url = "";
+            let body = null;
+
+            if (decision === 'APPROVE') {
+                if(!confirm("Are you sure you want to approve this enrollment?")) return;
+                url = `${API_BASE}/api/admin/approve/${id}`;
+            } else {
+                const reason = rejectReasonInput.value.trim();
+                if (!reason) { alert("Please provide a reason for rejection."); return; }
+
+                url = `${API_BASE}/api/admin/reject/${id}`;
+                body = JSON.stringify({ reason: reason });
+            }
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: body
+            });
+
+            const json = await res.json();
+
+            if (json.success) {
+                alert(decision === 'APPROVE' ? "Enrollment Approved!" : "Enrollment Rejected.");
+                location.reload();
+            } else {
+                alert("Error: " + (json.message || "Action failed"));
+            }
+
+        } catch(e) {
+            console.error(e);
+            alert("Network error occurred.");
+        }
+    };
+</script>

@@ -1,0 +1,58 @@
+---
+import { Image } from "astro:assets";
+import plmLogo from "../assets/PLMLogo.webp";
+
+interface Props {
+    lastName: string;
+    firstName: string;
+    studentId: string;
+}
+
+const { lastName, firstName, studentId } = Astro.props;
+---
+
+<header class="w-full bg-white shadow-sm z-50">
+    <div class="flex justify-center py-4">
+        <div class="w-16 h-16">
+            <Image src={plmLogo} alt="PLM Logo" class="w-full h-full object-contain" loading="eager" />
+        </div>
+    </div>
+
+    <div class="h-5 w-full bg-plm-navy border-b-[9px] border-[#991B1B]"></div>
+
+    <div class="bg-white border-b border-yellow-500/50 py-2">
+        <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+            <span class="text-gray-800">
+                Signed in as:
+                <span class="font-bold uppercase">
+                    {lastName && firstName ? `${lastName}, ${firstName}` : (lastName || firstName || "User")}
+                </span>
+                <span class="font-bold text-gray-600 ml-1">
+                    ({studentId || "N/A"})
+                </span>
+            </span>
+            <button id="signoutBtn" class="text-[#991B1B] font-bold hover:underline text-xs tracking-wide uppercase cursor-pointer">
+                Sign Out
+            </button>
+        </div>
+    </div>
+</header>
+
+<script>
+    const signoutBtn = document.getElementById('signoutBtn');
+
+    if (signoutBtn) {
+        signoutBtn.addEventListener('click', () => {
+            // 1. Clear all authentication cookies by setting expiry to the past
+            document.cookie = "jwt_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "user_profile=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+            // 2. Clear LocalStorage (cleanup)
+            localStorage.clear();
+
+            // 3. Redirect to Login Page
+            window.location.href = '/';
+        });
+    }
+</script>

@@ -1,0 +1,225 @@
+---
+import type { AdminEnrollmentDetailResponse } from "../../types/api";
+import AdminNavigation from "../navigations/AdminNavigation.astro";
+
+// Import Views
+import AccountsView from "../admin/views/AccountsView.astro";
+import SubjectsView from "../admin/views/SubjectsView.astro";
+import CollegesView from "../admin/views/CollegesView.astro";
+import CoursesView from "../admin/views/CoursesView.astro";
+import BlocksView from "../admin/views/BlocksView.astro";
+
+// Import the NEW Review Modal
+import EnrollmentReviewModal from "../admin/modals/EnrollmentReviewModal.astro";
+
+interface Props {
+    pendingEnrollments: AdminEnrollmentDetailResponse[];
+    totalUsers?: number;
+}
+
+const { pendingEnrollments } = Astro.props;
+
+const view = Astro.url.searchParams.get('view') || 'system';
+const isSystemView = view === 'system';
+const isEnrollmentView = view === 'enrollments';
+const managementViews = ['accounts', 'colleges', 'courses', 'subjects', 'blocks'];
+const isManagementView = managementViews.includes(view);
+
+const subNavActive = "text-plm-navy font-bold border-b-2 border-plm-navy";
+const subNavInactive = "text-gray-500 hover:text-plm-navy transition-colors";
+---
+
+<div class="space-y-6">
+
+    <!-- VIEW 1: SYSTEM STATUS -->
+    {isSystemView && (
+            <div class="animate-fade-in space-y-6">
+                <div id="status-panel" class="bg-white border border-gray-200 rounded-xl shadow-sm p-8 flex flex-col items-center justify-center transition-all">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-4">Current System Status</h2>
+                    <div class="text-center">
+                        <p class="text-gray-600 mb-1">
+                            Active Term: <span id="display-term" class="font-bold text-gray-900">Loading...</span>
+                        </p>
+                        <p class="text-gray-600 text-lg">
+                            Status: <span id="current-status" class="font-bold uppercase text-gray-400 tracking-wider">...</span>
+                        </p>
+                        <p class="text-xs text-gray-400 mt-2" id="display-dates"></p>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
+                    <h2 class="text-lg font-bold text-[#1e1e2f] mb-2">Enrollment Gate Control</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="flex flex-col gap-1">
+                            <label for="gate-start-date" class="text-sm font-bold text-gray-600">Enrollment Start:</label>
+                            <input type="date" id="gate-start-date" class="w-full border border-plm-gold rounded px-4 py-2 text-gray-600 focus:ring-1 focus:ring-plm-gold outline-none" />
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label for="gate-end-date" class="text-sm font-bold text-gray-600">Enrollment End:</label>
+                            <input type="date" id="gate-end-date" class="w-full border border-plm-gold rounded px-4 py-2 text-gray-600 focus:ring-1 focus:ring-plm-gold outline-none" />
+                        </div>
+                        <div class="col-span-1 md:col-span-2 mt-2 grid grid-cols-2 gap-8">
+                            <button id="btn-start-enrollment" class="bg-[#1e1e2f] text-white font-bold py-3 rounded shadow hover:bg-[#2d2d46] transition-colors">Open Enrollment</button>
+                            <button id="btn-close-enrollment" class="bg-white border border-red-200 text-red-700 font-bold py-3 rounded shadow-sm hover:bg-red-50 transition-colors">Force Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    )}
+
+    <!-- VIEW 2: MANAGEMENT SUITE -->
+    {isManagementView && (
+            <div class="animate-fade-in space-y-6">
+                <div class="flex gap-6 border-b border-gray-200 pb-2 mb-6 text-sm font-medium overflow-x-auto">
+                    <a href="?role=ADMIN&view=accounts" class={view === 'accounts' ? subNavActive : subNavInactive}>Accounts</a>
+                    <a href="?role=ADMIN&view=colleges" class={view === 'colleges' ? subNavActive : subNavInactive}>Colleges</a>
+                    <a href="?role=ADMIN&view=courses" class={view === 'courses' ? subNavActive : subNavInactive}>Courses</a>
+                    <a href="?role=ADMIN&view=subjects" class={view === 'subjects' ? subNavActive : subNavInactive}>Subjects</a>
+                    <a href="?role=ADMIN&view=blocks" class={view === 'blocks' ? subNavActive : subNavInactive}>Blocks</a>
+                </div>
+
+                {view === 'accounts' && <AccountsView />}
+                {view === 'colleges' && <CollegesView />}
+                {view === 'courses' && <CoursesView />}
+                {view === 'blocks' && <BlocksView />}
+                {view === 'subjects' && <SubjectsView />}
+            </div>
+    )}
+
+    <!-- VIEW 3: ENROLLMENT APPROVALS (Updated) -->
+    {isEnrollmentView && (
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 class="font-bold text-gray-800 uppercase text-sm tracking-wide">Pending Enrollment Applications</h3>
+                    <span class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold border border-red-200">{pendingEnrollments.length} Pending</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-white text-gray-500 uppercase font-bold text-xs border-b border-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 tracking-wider">Student ID</th>
+                            <th class="px-6 py-3 tracking-wider">Name</th>
+                            <th class="px-6 py-3 tracking-wider">Course</th>
+                            <th class="px-6 py-3 tracking-wider">Term</th>
+                            <th class="px-6 py-3 text-right tracking-wider">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                        {pendingEnrollments.length > 0 ? pendingEnrollments.map((enrollee) => (
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 font-mono text-gray-600">{enrollee.student_id || enrollee.studentId}</td>
+                                    <td class="px-6 py-4 font-bold text-gray-900">{enrollee.student_name || enrollee.studentName}</td>
+                                    <td class="px-6 py-4">{enrollee.course_code || enrollee.courseCode}</td>
+                                    <td class="px-6 py-4 text-xs text-gray-500">{enrollee.term_name || enrollee.termName}</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <!-- Open Review Modal -->
+                                        <button
+                                                class="text-xs font-bold bg-plm-navy text-white px-4 py-2 rounded shadow-sm hover:opacity-90 active:scale-95 transition-all"
+                                                data-enrollee={JSON.stringify(enrollee)}
+                                                onclick="openReviewModal(JSON.parse(this.dataset.enrollee))"
+                                        >
+                                            Review
+                                        </button>
+                                    </td>
+                                </tr>
+                        )) : (
+                                <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">No pending enrollments found.</td></tr>
+                        )}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- INCLUDE MODAL HERE -->
+                <EnrollmentReviewModal />
+            </div>
+    )}
+</div>
+
+<!-- Logic Scripts -->
+<script>
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+    function getToken() {
+        return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2];
+    }
+
+    async function apiCall(endpoint: string, method: string, body: any = null) {
+        const token = getToken();
+        if (!token) {
+            alert("Session expired.");
+            window.location.href = "/";
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: body ? JSON.stringify(body) : null
+            });
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+
+    // Load System Status Logic
+    async function loadSystemStatus() {
+        const data = await apiCall('/api/admin/system/status', 'GET');
+        if (data && data.success) {
+            const info = data.data;
+            const termEl = document.getElementById('display-term');
+            if(termEl) termEl.textContent = `${info.school_year} ${info.term_name}`;
+
+            const statusEl = document.getElementById('current-status');
+            if(statusEl) {
+                statusEl.textContent = info.status;
+                statusEl.className = info.status === 'OPEN' ? "font-bold uppercase text-green-600 tracking-wider" : "font-bold uppercase text-red-600 tracking-wider";
+            }
+            const dateEl = document.getElementById('display-dates');
+            if(dateEl) dateEl.textContent = `Window: ${info.enrollment_start} to ${info.enrollment_end}`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if(document.getElementById('status-panel')) loadSystemStatus();
+
+        // Gate Control Buttons
+        const btnStart = document.getElementById('btn-start-enrollment');
+        if (btnStart) {
+            btnStart.addEventListener('click', async () => {
+                const start = (document.getElementById('gate-start-date') as HTMLInputElement).value;
+                const end = (document.getElementById('gate-end-date') as HTMLInputElement).value;
+
+                if (!start || !end) { alert("Select dates"); return; }
+
+                const res = await apiCall('/api/admin/system/config', 'POST', {
+                    enrollment_start: start,
+                    enrollment_end: end,
+                    force_close: false
+                });
+
+                if (res?.success) {
+                    alert("Enrollment Opened!");
+                    await loadSystemStatus();
+                }
+            });
+        }
+
+        const btnClose = document.getElementById('btn-close-enrollment');
+        if (btnClose) {
+            btnClose.addEventListener('click', async () => {
+                if(!confirm("Force Close?")) return;
+                const res = await apiCall('/api/admin/system/config', 'POST', {
+                    enrollment_start: "2000-01-01",
+                    enrollment_end: "2000-01-01",
+                    force_close: true
+                });
+                if (res?.success) {
+                    alert("Closed.");
+                    await loadSystemStatus();
+                }
+            });
+        }
+    });
+</script>

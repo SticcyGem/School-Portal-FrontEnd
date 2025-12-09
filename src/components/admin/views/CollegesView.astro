@@ -1,0 +1,47 @@
+---
+import ManagementTable from "../ManagementTable.astro";
+import ManagementSearch from "../ManagementSearch.astro";
+import CollegeModal from "../modals/CollegeModal.astro";
+
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+const token = Astro.cookies.get('jwt_token')?.value;
+const query = Astro.url.searchParams.get('q') || '';
+
+let colleges = [];
+try {
+    const res = await fetch(`${API_BASE}/api/admin/colleges?q=${query}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const json = await res.json();
+    if(json.success) colleges = json.data;
+} catch (e) {}
+---
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold text-gray-800 font-garamond">Colleges</h2>
+        <ManagementSearch placeholder="Search colleges..." currentQuery={query} />
+    </div>
+    <ManagementTable
+            title="All Colleges"
+            columns={['College Code', 'College Name']}
+            rows={colleges}
+            idKey="collegeCode"
+            createLabel="New College"
+            onCreateClick="openCreateCollegeModal()"
+            onEditClick="openEditCollegeModal"
+            onDeleteClick="deleteCollege"
+            currentQuery={query}
+            baseUrl="?role=ADMIN&view=colleges"
+    />
+    <CollegeModal />
+</div>
+<script>
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+    function getToken() { return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2]; }
+    // @ts-ignore
+    window.deleteCollege = async function(code) {
+        if (!confirm(`Delete college "${code}"?`)) return;
+        const token = getToken();
+        if(!token) return;
+        await fetch(`${API_BASE}/api/admin/colleges/${code}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        location.reload();
+    }
+</script>

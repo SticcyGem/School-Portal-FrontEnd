@@ -1,0 +1,101 @@
+---
+import ManagementTable from "../ManagementTable.astro";
+import ManagementSearch from "../ManagementSearch.astro";
+import CourseModal from "../modals/CourseModal.astro";
+
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+const token = Astro.cookies.get('jwt_token')?.value;
+const query = Astro.url.searchParams.get('q') || '';
+
+let courses = [];
+try {
+    const res = await fetch(`${API_BASE}/api/admin/courses?q=${query}`, { headers: { 'Authorization': `Bearer ${token}` } });
+
+    // Add safety check for response
+    if (res.ok) {
+        const json = await res.json();
+        // Ensure data is an array before assigning
+        if(json.success && Array.isArray(json.data)) {
+            courses = json.data;
+            if (courses.length > 0) {
+                console.log("First Course Record:", courses[0]); // Debugging: Check console to see actual field names
+            }
+        }
+    }
+} catch (e) {
+    console.error("Failed to fetch courses:", e);
+}
+
+// FIX: Robust mapping that handles both DTO (snake_case) and Entity (camelCase) formats
+const tableRows = courses.map((c: any) => ({
+    // 1. Code: Check course_code (DTO) first, then courseCode (Entity)
+    courseCode: c.course_code || c.courseCode,
+
+    // 2. Description: Check course_name (DTO) first, then courseName (Entity)
+    description: c.course_name || c.courseName,
+
+    // 3. Tier: Check course_tier (DTO) first, then courseTier (Entity)
+    tier: c.course_tier || c.courseTier,
+
+    // 4. College: Robust check for flat or nested college code
+    // Checks: c.college_code (DTO snake), c.collegeCode (DTO camel), c.college.collegeCode (Entity), c.college.college_code (Entity snake)
+    college: c.college_code || c.collegeCode || (c.college?.collegeCode) || (c.college?.college_code) || 'N/A',
+
+    // Ensure ID is passed for Edit/Delete actions (using the resolved code)
+    id: c.course_code || c.courseCode
+}));
+---
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold text-gray-800 font-garamond">Courses</h2>
+        <ManagementSearch placeholder="Search courses..." currentQuery={query} />
+    </div>
+
+    <ManagementTable
+            title="All Courses"
+            columns={['Course Code', 'Description', 'Tier', 'College']}
+            rows={tableRows}
+            idKey="courseCode"
+            createLabel="New Course"
+            onCreateClick="openCreateCourseModal()"
+            onEditClick="openEditCourseModal"
+            onDeleteClick="deleteCourse"
+            currentQuery={query}
+            baseUrl="?role=ADMIN&view=courses"
+    />
+    <CourseModal />
+</div>
+
+<script>
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+    function getToken() {
+        return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2];
+    }
+
+    // @ts-ignore
+    window.deleteCourse = async function(code) {
+        if (!confirm(`Delete course "${code}"?`)) return;
+
+        const token = getToken();
+        if(!token) { alert("Session expired"); return; }
+
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/courses/${code}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const json = await res.json();
+
+            if(json.success) {
+                location.reload();
+            } else {
+                alert("Cannot delete: " + (json.message || "Unknown error"));
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Network error");
+        }
+    }
+</script>

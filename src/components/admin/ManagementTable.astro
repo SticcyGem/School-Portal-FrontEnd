@@ -1,0 +1,93 @@
+---
+interface Props {
+    title: string;
+    columns: string[];
+    rows: any[];
+    idKey?: string;
+    createLabel: string;
+    onCreateClick: string;
+    onEditClick?: string;
+    onDeleteClick?: string;
+    currentPage?: number;
+    totalPages?: number;
+    currentQuery?: string;
+    baseUrl?: string;
+}
+
+const {
+    title, columns, rows, idKey = 'id', createLabel,
+    onCreateClick, onEditClick, onDeleteClick,
+    currentPage = 0, totalPages = 1, currentQuery = "", baseUrl = ""
+} = Astro.props;
+
+const getStatusClass = (status: any) => {
+    if (!status) return 'bg-gray-100 text-gray-700 border-gray-200';
+    const s = status.toString().toUpperCase();
+    if (['ACTIVE', 'OPEN', 'ENROLLED', 'CREDITED', 'FULL_TIME', 'REGULAR'].includes(s))
+        return 'bg-green-100 text-green-700 border-green-200';
+    if (['INACTIVE', 'CLOSED', 'DROPPED', 'REJECTED', 'PART_TIME', 'IRREGULAR'].includes(s))
+        return 'bg-red-100 text-red-700 border-red-200';
+    return 'bg-gray-100 text-gray-700 border-gray-200';
+};
+
+const getRowValue = (row: any, col: string) => {
+    if (row[col] !== undefined) return row[col];
+    const lower = col.toLowerCase();
+    if (row[lower] !== undefined) return row[lower];
+    const snake = lower.replace(/ /g, '_');
+    if (row[snake] !== undefined) return row[snake];
+    const camel = lower.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => index === 0 ? word.toLowerCase() : word.toUpperCase()).replace(/\s+/g, '');
+    if (row[camel] !== undefined) return row[camel];
+    return '-';
+};
+---
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="font-bold text-gray-800 uppercase text-sm tracking-wide">{title}</h3>
+        <button onclick={onCreateClick} class="bg-plm-navy text-white text-xs font-bold px-4 py-2 rounded hover:opacity-90 flex items-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            {createLabel}
+        </button>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-gray-100 text-gray-500 uppercase font-bold text-xs border-b border-gray-200">
+            <tr>
+                {columns.map(col => <th class="px-6 py-3 tracking-wider">{col}</th>)}
+                <th class="px-6 py-3 text-right tracking-wider">Actions</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+            {rows.length > 0 ? rows.map((row) => (
+                    <tr class="hover:bg-gray-50 transition-colors group">
+                        {columns.map(col => {
+                            const val = getRowValue(row, col);
+                            const isStatus = col.toLowerCase() === 'status' || col.toLowerCase().includes('type');
+                            const isArray = Array.isArray(val);
+                            return (
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {isStatus ? <span class={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wide ${getStatusClass(val)}`}>{val}</span> :
+                                            isArray ? <div class="flex gap-1 flex-wrap">{val.map((item: string) => <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs border border-blue-100 font-medium">{item}</span>)}</div> :
+                                                    <span class="text-gray-700 font-medium">{val}</span>}
+                                    </td>
+                            );
+                        })}
+                        <td class="px-6 py-4 text-right flex justify-end gap-2">
+                            {onEditClick && <button data-row={JSON.stringify(row)} onclick={`${onEditClick}(JSON.parse(this.dataset.row))`} class="text-gray-400 hover:text-plm-gold transition-colors p-1 rounded-full hover:bg-yellow-50 active:scale-90 cursor-pointer" title="Edit"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>}
+                            {onDeleteClick && <button onclick={`${onDeleteClick}('${row[idKey] || row.id}')`} class="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50 active:scale-90 cursor-pointer" title="Delete"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>}
+                        </td>
+                    </tr>
+            )) : (
+                    <tr><td colspan={columns.length + 1} class="px-6 py-12 text-center text-gray-400 italic">No records found.</td></tr>
+            )}
+            </tbody>
+        </table>
+    </div>
+    <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
+        <span class="font-medium">Page <span class="text-gray-900">{currentPage + 1}</span> of {totalPages || 1}</span>
+        <div class="flex gap-2">
+            <a href={currentPage > 0 ? `${baseUrl}&q=${currentQuery}&page=${currentPage - 1}` : '#'} class={`px-3 py-1 border border-gray-300 rounded transition-colors ${currentPage > 0 ? 'bg-white hover:bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'}`}>Previous</a>
+            <a href={currentPage < totalPages - 1 ? `${baseUrl}&q=${currentQuery}&page=${currentPage + 1}` : '#'} class={`px-3 py-1 border border-gray-300 rounded transition-colors ${currentPage < totalPages - 1 ? 'bg-white hover:bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'}`}>Next</a>
+        </div>
+    </div>
+</div>

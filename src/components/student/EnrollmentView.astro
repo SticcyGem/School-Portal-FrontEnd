@@ -1,0 +1,169 @@
+---
+import type { EnrollmentOfferingResponse, SectionOfferingResponse } from "../../types/api";
+
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+const token = Astro.cookies.get('jwt_token')?.value;
+
+let offerings: SectionOfferingResponse[] = [];
+let error = null;
+let currentStatus = "NONE";
+
+if (token) {
+    try {
+        const res = await fetch(`${API_BASE}/api/enrollment/options`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            offerings = json.data.sections || [];
+            currentStatus = json.data.enrollment_status;
+        } else {
+            error = json.message || "Failed to load offerings";
+        }
+    } catch (e) {
+        error = "Network error loading enrollment data.";
+    }
+}
+
+const isEnrollmentLocked = currentStatus === 'ENROLLED' || currentStatus === 'DROPPED';
+---
+
+<div class="space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h1 class="text-2xl font-bold text-plm-navy">Enrollment</h1>
+        <p class="text-gray-500 text-sm mt-1">Select sections to enroll in for this term.</p>
+
+        <div class="mt-4 flex items-center gap-2">
+            <span class="text-sm font-bold text-gray-600">Status:</span>
+            <span class={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
+                currentStatus === 'ENROLLED' ? 'bg-green-100 text-green-700 border-green-200' :
+                    currentStatus === 'DRAFT' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                        currentStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200' :
+                            'bg-gray-100 text-gray-700 border-gray-200'
+            }`}>
+                {currentStatus}
+            </span>
+        </div>
+    </div>
+
+    {error && (
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+            </div>
+    )}
+
+    {!isEnrollmentLocked ? (
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800 uppercase text-sm">Available Sections</h3>
+                    <button
+                            id="btn-submit-enrollment"
+                            class="bg-plm-navy text-white text-xs font-bold px-6 py-2 rounded shadow hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Submit Enrollment
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-xs">
+                        <tr>
+                            <th class="px-4 py-3 w-10 text-center">Select</th>
+                            <th class="px-6 py-3">Code</th>
+                            <th class="px-6 py-3">Subject</th>
+                            <th class="px-6 py-3">Section</th>
+                            <th class="px-6 py-3">Schedule</th>
+                            <th class="px-6 py-3 text-center">Units</th>
+                            <th class="px-6 py-3 text-center">Status</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                        {offerings.map((sec) => (
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 text-center">
+                                        <input
+                                                type="checkbox"
+                                                value={sec.section_no}
+                                                class="enrollment-checkbox w-4 h-4 text-plm-navy rounded border-gray-300 focus:ring-plm-navy cursor-pointer"
+                                                disabled={sec.status !== 'OPEN'}
+                                        />
+                                    </td>
+                                    <td class="px-6 py-4 font-bold text-plm-navy">{sec.subject_code}</td>
+                                    <td class="px-6 py-4">{sec.subject_title}</td>
+                                    <td class="px-6 py-4">{sec.section_name}</td>
+                                    <td class="px-6 py-4 font-mono text-xs text-gray-600">{sec.schedule}</td>
+                                    <td class="px-6 py-4 text-center">{sec.units}</td>
+                                    <td class="px-6 py-4 text-center">
+                                    <span class={`text-[10px] font-bold px-2 py-1 rounded border ${
+                                        sec.status === 'OPEN' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
+                                    }`}>
+                                        {sec.status}
+                                    </span>
+                                    </td>
+                                </tr>
+                        ))}
+                        {offerings.length === 0 && (
+                                <tr><td colspan="7" class="px-6 py-8 text-center text-gray-400 italic">No available sections found for your course.</td></tr>
+                        )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    ) : (
+            <div class="bg-blue-50 border border-blue-100 p-8 rounded-xl text-center">
+                <h3 class="text-lg font-bold text-blue-800 mb-2">Enrollment Completed</h3>
+                <p class="text-blue-600">You have already submitted your enrollment or are fully enrolled. Please check your schedule.</p>
+                <a href="/dashboard" class="inline-block mt-4 text-sm font-bold text-white bg-blue-600 px-6 py-2 rounded hover:bg-blue-700 transition-colors">Go to Schedule</a>
+            </div>
+    )}
+</div>
+
+<script>
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+    function getToken() { return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2]; }
+
+    const btn = document.getElementById('btn-submit-enrollment');
+
+    if (btn) {
+        btn.addEventListener('click', async () => {
+            const checkboxes = document.querySelectorAll('.enrollment-checkbox:checked');
+            const selectedIds = Array.from(checkboxes).map((cb: any) => parseInt(cb.value));
+
+            if (selectedIds.length === 0) {
+                alert("Please select at least one subject.");
+                return;
+            }
+
+            if (!confirm(`Submit enrollment for ${selectedIds.length} subjects?`)) return;
+
+            const token = getToken();
+            if(!token) { alert("Session expired"); return; }
+
+            btn.setAttribute('disabled', 'true');
+            btn.textContent = "Submitting...";
+
+            try {
+                const res = await fetch(`${API_BASE}/api/enrollment/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ section_id: selectedIds })
+                });
+
+                const json = await res.json();
+
+                if (json.success) {
+                    alert("Enrollment submitted successfully! Please wait for Admin approval.");
+                    location.href = "/dashboard";
+                } else {
+                    alert("Error: " + (json.message || "Submission failed"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Network error");
+            } finally {
+                btn.removeAttribute('disabled');
+                btn.textContent = "Submit Enrollment";
+            }
+        });
+    }
+</script>

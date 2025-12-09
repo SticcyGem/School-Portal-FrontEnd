@@ -1,0 +1,67 @@
+<div id="college-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 opacity-0">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col transform transition-all scale-95">
+        <div class="bg-plm-navy px-6 py-4 rounded-t-xl"><h3 id="col-modal-title" class="text-white font-bold">New College</h3></div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase">College Code</label>
+                <input id="col-code" type="text" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-plm-navy" />
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase">College Name</label>
+                <input id="col-name" type="text" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-plm-navy" />
+            </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-2 border-t border-gray-100 rounded-b-xl">
+            <button onclick="closeCollegeModal()" class="px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded">Cancel</button>
+            <button onclick="saveCollege()" class="px-4 py-2 text-sm text-white bg-plm-navy font-bold rounded hover:bg-opacity-90">Save</button>
+        </div>
+    </div>
+</div>
+<script>
+    const modal = document.getElementById('college-modal');
+    const title = document.getElementById('col-modal-title');
+    const codeIn = document.getElementById('col-code') as HTMLInputElement;
+    const nameIn = document.getElementById('col-name') as HTMLInputElement;
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+    function getToken() { return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2]; }
+
+    // @ts-ignore
+    window.openCreateCollegeModal = () => {
+        if(!modal) return;
+        title!.textContent = "New College";
+        codeIn.value = ""; codeIn.disabled = false; nameIn.value = "";
+        modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div')?.classList.remove('scale-95'); }, 10);
+    };
+    // @ts-ignore
+    window.openEditCollegeModal = (data) => {
+        if(!modal) return;
+        title!.textContent = "Edit College";
+        codeIn.value = data.collegeCode || data.college_code; codeIn.disabled = true;
+        nameIn.value = data.collegeName || data.college_name;
+        modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div')?.classList.remove('scale-95'); }, 10);
+    };
+    // @ts-ignore
+    window.closeCollegeModal = () => {
+        if(!modal) return;
+        modal.classList.add('opacity-0'); modal.querySelector('div')?.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+    // @ts-ignore
+    window.saveCollege = async () => {
+        const token = getToken();
+        if(!token) return;
+
+        const isEdit = codeIn.disabled;
+        const url = isEdit ? `${API_BASE}/api/admin/colleges/${codeIn.value}` : `${API_BASE}/api/admin/colleges`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ college_code: codeIn.value, college_name: nameIn.value })
+        });
+
+        if (res.ok) location.reload();
+        else alert("Failed to save college");
+    };
+</script>

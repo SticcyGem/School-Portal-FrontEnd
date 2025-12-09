@@ -1,0 +1,200 @@
+<!-- Modal for Create/Edit Subject -->
+<div id="subject-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 opacity-0">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh] transform transition-all scale-95">
+
+        <!-- HEADER -->
+        <div class="bg-plm-navy px-6 py-4 flex justify-between items-center shrink-0 rounded-t-xl">
+            <h3 id="subject-modal-title" class="text-white font-bold text-lg">Create New Subject</h3>
+            <button id="btn-close-subject-modal" class="text-white/70 hover:text-white transition-colors" aria-label="Close Modal">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- BODY -->
+        <div class="p-6 space-y-6 overflow-y-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Subject Code -->
+                <div class="flex flex-col gap-1">
+                    <label for="modal-subject-code" class="text-xs font-bold text-gray-500 uppercase">Subject Code <span class="text-red-500">*</span></label>
+                    <input id="modal-subject-code" type="text" placeholder="e.g. CS 101" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none disabled:bg-gray-100 disabled:text-gray-500" />
+                </div>
+
+                <!-- Description/Name -->
+                <div class="flex flex-col gap-1">
+                    <label for="modal-description" class="text-xs font-bold text-gray-500 uppercase">Subject Title <span class="text-red-500">*</span></label>
+                    <input id="modal-description" type="text" placeholder="e.g. Introduction to Computing" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" />
+                </div>
+
+                <!-- Units -->
+                <div class="flex flex-col gap-1">
+                    <label for="modal-lec-units" class="text-xs font-bold text-gray-500 uppercase">Lecture Units <span class="text-red-500">*</span></label>
+                    <input id="modal-lec-units" type="number" min="0" value="0" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label for="modal-lab-units" class="text-xs font-bold text-gray-500 uppercase">Laboratory Units <span class="text-red-500">*</span></label>
+                    <input id="modal-lab-units" type="number" min="0" value="0" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" />
+                </div>
+
+                <div class="col-span-1 md:col-span-2 my-2 border-t border-gray-100"></div>
+
+                <!-- Prerequisite -->
+                <div class="flex flex-col gap-1">
+                    <label for="modal-prerequisite" class="text-xs font-bold text-gray-500 uppercase">Prerequisite Code</label>
+                    <input id="modal-prerequisite" type="text" placeholder="Optional (e.g. MATH 101)" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" />
+                </div>
+
+                <!-- Course Linking -->
+                <div class="flex flex-col gap-1">
+                    <label for="modal-course" class="text-xs font-bold text-gray-500 uppercase">Link to Course</label>
+                    <select id="modal-course" class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:ring-1 focus:ring-plm-navy outline-none">
+                        <option value="">Loading courses...</option> <!-- Placeholder will be replaced by JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100 shrink-0 rounded-b-xl">
+            <button id="btn-cancel-subject-modal" class="px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded transition-colors">Cancel</button>
+            <button id="btn-save-subject-modal" class="px-6 py-2 text-sm text-white bg-plm-navy font-bold rounded shadow hover:bg-opacity-90 transition-all flex items-center justify-center min-w-[100px]">
+                <span id="subject-btn-text">Save Subject</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- ELEMENT REFERENCES ---
+    const modal = document.getElementById('subject-modal');
+    const modalTitle = document.getElementById('subject-modal-title');
+
+    const codeInput = document.getElementById('modal-subject-code') as HTMLInputElement;
+    const nameInput = document.getElementById('modal-description') as HTMLInputElement;
+    const lecInput = document.getElementById('modal-lec-units') as HTMLInputElement;
+    const labInput = document.getElementById('modal-lab-units') as HTMLInputElement;
+    const prereqInput = document.getElementById('modal-prerequisite') as HTMLInputElement;
+    const courseInput = document.getElementById('modal-course') as HTMLSelectElement;
+
+    // --- GLOBAL FUNCTIONS ---
+
+    // @ts-ignore
+    window.openCreateSubjectModal = function() {
+        if(!modal) return;
+        if(modalTitle) modalTitle.textContent = "Create New Subject";
+
+        // Reset Inputs
+        if(codeInput) { codeInput.value = ""; codeInput.disabled = false; }
+        if(nameInput) nameInput.value = "";
+        if(lecInput) lecInput.value = "0";
+        if(labInput) labInput.value = "0";
+        if(prereqInput) prereqInput.value = "";
+        if(courseInput) courseInput.value = "";
+
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div')?.classList.remove('scale-95'); }, 10);
+    }
+
+    // @ts-ignore
+    window.openEditSubjectModal = function(subject) {
+        if(!modal) return;
+        if(modalTitle) modalTitle.textContent = "Edit Subject Details";
+
+        // Populate Inputs
+        // Note: Check if backend returns 'subject_code' or 'subjectCode' (usually snake_case from JSON if mapped that way, or camelCase if standard Spring Boot default)
+        // Adjust these property accessors based on your actual API response.
+        if(codeInput) {
+            codeInput.value = subject.subject_code || subject.subjectCode || "";
+            codeInput.disabled = true; // Primary key disabled on edit
+        }
+        if(nameInput) nameInput.value = subject.subject_name || subject.subjectName || "";
+        if(lecInput) lecInput.value = subject.lec_units || subject.lecUnits || "0";
+        if(labInput) labInput.value = subject.lab_units || subject.labUnits || "0";
+
+        // Note: Standard 'getAllSubjects' might not return linked course/prereq info unless your DTO includes it.
+        // If not, these might be empty on edit, which is a common limitation of simple list views.
+        if(prereqInput) prereqInput.value = subject.prerequisite_code || subject.prerequisiteCode || "";
+        if(courseInput) courseInput.value = subject.course_code || subject.courseCode || "";
+
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div')?.classList.remove('scale-95'); }, 10);
+    }
+
+    // --- API HELPER (Local) ---
+    function getCookie(name: string) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        if (match) return match[2];
+        return null;
+    }
+
+    async function saveSubject() {
+        const code = codeInput?.value;
+        // Determine Edit Mode: If code input is disabled, we are editing an existing record.
+        const isEdit = codeInput?.disabled;
+        const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+        const token = getCookie('jwt_token');
+
+        if(!token) { alert("Session expired"); return; }
+        if(!code || !nameInput?.value) { alert("Code and Title are required"); return; }
+
+        const btn = document.getElementById('btn-save-subject-modal') as HTMLButtonElement;
+        const btnText = document.getElementById('subject-btn-text');
+        if(btn) btn.disabled = true;
+        if(btnText) btnText.textContent = "Saving...";
+
+        try {
+            // Construct payload matching backend DTO: CreateSubjectRequest
+            const payload = {
+                subject_code: code,
+                subject_name: nameInput.value,
+                lec_units: parseInt(lecInput.value || "0", 10),
+                lab_units: parseInt(labInput.value || "0", 10),
+                prerequisite_code: prereqInput.value || null,
+                course_code: courseInput.value || null
+            };
+
+            let endpoint = '/api/admin/subjects';
+            let method = 'POST';
+
+            if(isEdit) {
+                endpoint = `/api/admin/subjects/${code}`;
+                method = 'PUT';
+            }
+
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            const json = await res.json();
+
+            if (json.success) {
+                alert(`Subject ${isEdit ? 'updated' : 'created'} successfully!`);
+                location.reload();
+            } else {
+                alert("Error: " + (json.message || "Operation failed"));
+            }
+
+        } catch (e) {
+            console.error(e);
+            alert("Network error.");
+        } finally {
+            if(btn) btn.disabled = false;
+            if(btnText) btnText.textContent = "Save Subject";
+        }
+    }
+
+    function closeModal() {
+        if(modal) {
+            modal.classList.add('opacity-0');
+            modal.querySelector('div')?.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+    }
+
+    // Bind Events
+    document.getElementById('btn-close-subject-modal')?.addEventListener('click', closeModal);
+    document.getElementById('btn-cancel-subject-modal')?.addEventListener('click', closeModal);
+    document.getElementById('btn-save-subject-modal')?.addEventListener('click', saveSubject);
+</script>

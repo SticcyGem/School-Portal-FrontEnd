@@ -1,0 +1,90 @@
+---
+import ManagementTable from "../ManagementTable.astro";
+import ManagementSearch from "../ManagementSearch.astro";
+import BlockModal from "../modals/BlockModal.astro";
+
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+const token = Astro.cookies.get('jwt_token')?.value;
+const query = Astro.url.searchParams.get('q') || '';
+
+let blocks = [];
+try {
+    const res = await fetch(`${API_BASE}/api/admin/blocks?q=${query}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) {
+        const json = await res.json();
+        if(json.success && Array.isArray(json.data)) {
+            blocks = json.data;
+        }
+    }
+} catch (e) {
+    console.error("Fetch error:", e);
+}
+
+const tableRows = blocks.map((b: any) => ({
+    // FIX: Deep access based on your JSON structure
+    // b.course is an object { course_code: "BSCS", ... }
+    course: b.course?.course_code || b.course?.courseCode || b.course_code || 'N/A',
+
+    // Direct properties from your JSON
+    yearLevel: b.year_level || b.yearLevel,
+    blockNo: b.block_number || b.blockNumber,
+
+    // ID for Actions
+    id: b.block_no || b.blockNo,
+
+    // Pass the full nested objects for the Edit Modal to use
+    rawCourse: b.course
+}));
+---
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold text-gray-800 font-garamond">Blocks</h2>
+        <ManagementSearch placeholder="Search blocks..." currentQuery={query} />
+    </div>
+
+    <ManagementTable
+            title="Section Blocks"
+            columns={['Course', 'Year Level', 'Block No']}
+            rows={tableRows}
+            idKey="id"
+            createLabel="New Block"
+            onCreateClick="openCreateBlockModal()"
+            onEditClick="openEditBlockModal"
+            onDeleteClick="deleteBlock"
+            currentQuery={query}
+            baseUrl="?role=ADMIN&view=blocks"
+    />
+    <BlockModal />
+</div>
+
+<script>
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+    function getToken() {
+        return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2];
+    }
+
+    // @ts-ignore
+    window.deleteBlock = async function(id) {
+        if (!confirm(`Delete this block?`)) return;
+
+        const token = getToken();
+        if(!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/blocks/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert("Failed to delete block.");
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Network error");
+        }
+    }
+</script>

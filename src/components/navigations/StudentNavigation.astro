@@ -1,0 +1,24 @@
+---
+// src/components/navigations/StudentNavigation.astro
+const currentPath = Astro.url.pathname;
+
+const links = [
+    { label: "Schedule", href: "/dashboard" }, // Dashboard is the schedule
+    { label: "Enrollment", href: "/student/enrollment" },
+    { label: "Profile", href: "/student/profile" }
+];
+
+const activeClass = "bg-plm-navy text-white px-6 py-2 rounded shadow-sm hover:bg-opacity-90 transition-all whitespace-nowrap";
+const inactiveClass = "px-6 py-2 rounded hover:text-plm-navy hover:bg-plm-navy/10 transition-all whitespace-nowrap";
+---
+<nav class="border-b border-gray-200 bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-around md:justify-center md:gap-4 py-3 text-sm font-medium text-gray-700 overflow-x-auto">
+            {links.map(link => (
+                    <a href={link.href} class={currentPath === link.href ? activeClass : inactiveClass}>
+                        {link.label}
+                    </a>
+            ))}
+        </div>
+    </div>
+</nav>

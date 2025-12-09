@@ -1,0 +1,214 @@
+<div id="course-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 opacity-0">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col transform transition-all scale-95">
+        <div class="bg-plm-navy px-6 py-4 rounded-t-xl"><h3 id="course-modal-title" class="text-white font-bold">New Course</h3></div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase">Course Code <span class="text-red-500">*</span></label>
+                <input id="course-code" type="text" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-plm-navy" />
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase">Course Name <span class="text-red-500">*</span></label>
+                <input id="course-name" type="text" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-plm-navy" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Tier <span class="text-red-500">*</span></label>
+                    <select id="course-tier" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none">
+                        <option value="UNDERGRADUATE">Undergraduate</option>
+                        <option value="GRADUATE">Graduate</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">College <span class="text-red-500">*</span></label>
+                    <select id="course-college" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-2 border-t border-gray-100 rounded-b-xl">
+            <button onclick="closeCourseModal()" class="px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded">Cancel</button>
+            <button onclick="saveCourse()" class="px-4 py-2 text-sm text-white bg-plm-navy font-bold rounded hover:bg-opacity-90">Save</button>
+        </div>
+    </div>
+</div>
+<script>
+    // DOM Elements with optional typing to allow null checks
+    const modal = document.getElementById('course-modal');
+    const title = document.getElementById('course-modal-title');
+    const codeIn = document.getElementById('course-code') as HTMLInputElement | null;
+    const nameIn = document.getElementById('course-name') as HTMLInputElement | null;
+    const tierIn = document.getElementById('course-tier') as HTMLSelectElement | null;
+    const collIn = document.getElementById('course-college') as HTMLSelectElement | null;
+
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+    function getToken() {
+        return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2];
+    }
+
+    async function loadColleges() {
+        if (!collIn) return; // Guard: Element must exist
+
+        // Prevent reloading if options are already populated
+        if(collIn.options.length > 1 && collIn.options[1].value !== "") return;
+
+        try {
+            const token = getToken();
+            if (!token) return;
+
+            const res = await fetch(`${API_BASE}/api/admin/colleges`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+
+            if(json.success && Array.isArray(json.data)) {
+                collIn.innerHTML = '<option value="">-- Select College --</option>'; // Reset with placeholder
+
+                json.data.forEach((c: any) => {
+                    // Safe property access
+                    const code = c?.collegeCode || c?.college_code;
+                    const name = c?.collegeName || c?.college_name;
+
+                    if (code) {
+                        const opt = document.createElement('option');
+                        opt.value = code;
+                        opt.textContent = `${code} - ${name || ''}`;
+                        collIn.appendChild(opt);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Failed to load colleges", e);
+            collIn.innerHTML = '<option value="">Error loading options</option>';
+        }
+    }
+
+    // @ts-ignore
+    window.openCreateCourseModal = async () => {
+        // Ensure all elements exist before trying to manipulate them
+        if(!modal || !codeIn || !nameIn || !tierIn || !collIn) return;
+
+        await loadColleges();
+
+        if(title) title.textContent = "New Course";
+
+        codeIn.value = "";
+        codeIn.disabled = false;
+
+        nameIn.value = "";
+        tierIn.value = "UNDERGRADUATE";
+        collIn.value = "";
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div')?.classList.remove('scale-95');
+        }, 10);
+    };
+
+    // @ts-ignore
+    window.openEditCourseModal = async (data) => {
+        // Guard clauses
+        if(!modal || !codeIn || !nameIn || !tierIn || !collIn) return;
+        if (!data) return;
+
+        await loadColleges();
+
+        if(title) title.textContent = "Edit Course";
+
+        // Null-safe data mapping
+        codeIn.value = data.courseCode || data.course_code || "";
+        codeIn.disabled = true;
+
+        nameIn.value = data.description || data.courseName || data.course_name || "";
+        tierIn.value = data.tier || data.courseTier || data.course_tier || "UNDERGRADUATE";
+
+        // Robust College value mapping
+        const collegeValue = data.college || data.collegeCode || data.college_code || "";
+
+        // Reset to ensure we don't hold stale state
+        collIn.value = "";
+
+        // 1. Try exact string match
+        if (typeof collegeValue === 'string' && collegeValue) {
+            collIn.value = collegeValue;
+        }
+        // 2. Try object property match
+        else if (typeof collegeValue === 'object' && collegeValue) {
+            const code = collegeValue.collegeCode || collegeValue.college_code;
+            if(code) collIn.value = code;
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div')?.classList.remove('scale-95');
+        }, 10);
+    };
+
+    // @ts-ignore
+    window.closeCourseModal = () => {
+        if(!modal) return;
+        modal.classList.add('opacity-0');
+        modal.querySelector('div')?.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+
+    // Helper to treat empty strings as null
+    const toNullable = (val: string | undefined | null) => {
+        return (!val || val.trim() === "") ? null : val.trim();
+    };
+
+    // @ts-ignore
+    window.saveCourse = async () => {
+        if(!codeIn || !nameIn || !tierIn || !collIn) return;
+
+        const token = getToken();
+        if(!token) {
+            alert("Session expired.");
+            return;
+        }
+
+        const isEdit = codeIn.disabled;
+        const url = isEdit
+            ? `${API_BASE}/api/admin/courses/${codeIn.value}`
+            : `${API_BASE}/api/admin/courses`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        // sanitize inputs
+        const payload = {
+            course_code: toNullable(codeIn.value),
+            course_name: toNullable(nameIn.value),
+            course_tier: toNullable(tierIn.value),
+            college_code: toNullable(collIn.value)
+        };
+
+        // Basic client-side validation before sending
+        if (!payload.course_code || !payload.course_name || !payload.course_tier || !payload.college_code) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                location.reload();
+            } else {
+                const json = await res.json();
+                alert("Failed: " + (json.message || "Unknown error"));
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Network error");
+        }
+    };
+</script>

@@ -5,6 +5,18 @@ const ANIMATION_DURATION = 400;
 const CLS_DEFAULT = ['border-plm-gold', 'text-text-gray', 'focus:border-plm-navy', 'focus:text-black'];
 const CLS_ERROR = ['border-error-red', 'text-error-red', 'focus:border-error-red', 'focus:text-error-red'];
 
+// --- COOKIE HELPER ---
+function setCookie(name: string, value: string, days: number) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    // SameSite=Lax allows the cookie to be sent on navigation
+    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+}
+
 export function initLogin() {
     const form = document.getElementById('loginForm') as HTMLFormElement | null;
     const errorMsg = document.getElementById('errorMessage') as HTMLElement | null;
@@ -15,15 +27,12 @@ export function initLogin() {
 
     if (!form || !emailInput || !passwordInput || !loginBtn) return;
 
-    // EVENT LISTENERS
     setupInputClearing([emailInput, passwordInput]);
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await handleLogin(emailInput, passwordInput);
     });
-
-    // HELPER FUNCTIONS
 
     async function handleLogin(emailField: HTMLInputElement, passField: HTMLInputElement) {
         const email = emailField.value;
@@ -33,17 +42,39 @@ export function initLogin() {
         if (loginBtn) loginBtn.disabled = true;
 
         try {
-            const data = await postLoginData(email, password);
+            const responseWrapper = await postLoginData(email, password);
 
-            if (data.success) {
-                const { token, role, accountId } = data.payload;
-                localStorage.setItem('jwt_token', token);
-                localStorage.setItem('user_role', role);
-                localStorage.setItem('account_id', accountId);
+            if (responseWrapper.success) {
+                const backendData = responseWrapper.payload.data;
+                const token = backendData.token;
+
+                // Assume the first role is the active one, or default to STUDENT
+                const roles = backendData.roles || [];
+                let primaryRole = "STUDENT";
+                if (roles.includes("ADMIN")) primaryRole = "ADMIN";
+                else if (roles.includes("PROFESSOR")) primaryRole = "PROFESSOR";
+                else if (roles.length > 0) primaryRole = roles[0];
+
+                const profile = backendData.profile;
+
+                // --- 1. SET COOKIES (Vital for Astro SSR) ---
+                setCookie('jwt_token', token, 1);
+                setCookie('user_role', primaryRole, 1);
+
+                // Base64 encode profile to safely store in cookie
+                // In production, simpler to just store ID and fetch profile on dashboard,
+                // but this works for quick UI hydration.
+                const safeProfile = btoa(JSON.stringify(profile));
+                setCookie('user_profile', safeProfile, 1);
+
+                // --- 2. REDIRECT ---
+                // We always go to /dashboard. The server will decide what to show based on the cookie.
                 window.location.href = '/dashboard';
+
             } else {
                 passField.value = '';
-                displayError(data.message || 'Invalid credentials');
+                const msg = responseWrapper.payload?.message || 'Invalid credentials';
+                displayError(msg);
                 triggerErrorState([emailField, passField]);
             }
         } catch (error) {
@@ -59,20 +90,22 @@ export function initLogin() {
     async function postLoginData(email: string, password: string) {
         if (!API_BASE) {
             console.error("PUBLIC_API_BASE_URL is missing in .env");
-            throw new Error("Configuration Error");
+            // Optional: fallback for dev
+            // return { success: false, message: 'Config Error', payload: null };
         }
 
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
         try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
             const payload = await response.json();
-            return { success: response.ok, message: payload.message, payload };
+            const isSuccess = response.ok && payload.success;
+            return { success: isSuccess, message: payload.message, payload };
         } catch (e) {
-            return { success: false, message: 'Invalid server response', payload: null };
+            return { success: false, message: 'Server unreachable', payload: null };
         }
     }
 
@@ -94,7 +127,6 @@ export function initLogin() {
             loginCard.classList.remove('animate-shake');
             void loginCard.offsetWidth;
             loginCard.classList.add('animate-shake');
-
             setTimeout(() => {
                 loginCard.classList.remove('animate-shake');
             }, ANIMATION_DURATION);
@@ -106,7 +138,6 @@ export function initLogin() {
             input.addEventListener('input', () => {
                 input.classList.remove(...CLS_ERROR);
                 input.classList.add(...CLS_DEFAULT);
-
                 if (errorMsg) {
                     errorMsg.classList.add('hidden');
                     errorMsg.style.display = 'none';
@@ -115,5 +146,3 @@ export function initLogin() {
         });
     }
 }
-
-initLogin();

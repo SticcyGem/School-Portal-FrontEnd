@@ -1,0 +1,102 @@
+---
+import ManagementTable from "../ManagementTable.astro";
+import ManagementSearch from "../ManagementSearch.astro";
+import UserModal from "../modals/UserModal.astro";
+import type { UserResponse } from "../../../types/api";
+
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+const token = Astro.cookies.get('jwt_token')?.value;
+
+// URL Params
+const query = Astro.url.searchParams.get('q') || '';
+const page = parseInt(Astro.url.searchParams.get('page') || '0');
+const size = 10;
+
+let accountsData: UserResponse[] = [];
+let totalPages = 0;
+let error = null;
+
+if (token) {
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/users/search?q=${query}&page=${page}&size=${size}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.data) {
+                accountsData = json.data.content || [];
+                totalPages = json.data.totalPages || 0;
+            }
+        } else {
+            error = `Failed to load users (Status: ${res.status})`;
+        }
+    } catch (e) {
+        console.error(e);
+        error = "Could not connect to backend.";
+    }
+}
+
+// FORMATTING LOGIC
+const tableRows = accountsData.map((user: any) => {
+    // 1. Force Last Name to Uppercase
+    const lastName = (user.last_name || "").toUpperCase();
+
+    // 2. Keep First Name as is
+    const firstName = user.first_name || "";
+
+    // 3. Handle Middle Initial: Get first char + "." if it exists
+    const middleInitial = user.middle_name
+        ? ` ${user.middle_name.charAt(0).toUpperCase()}.`
+        : "";
+
+    return {
+        ...user,
+        // Combine: "LASTNAME, Firstname M."
+        fullName: `${lastName}, ${firstName}${middleInitial}`,
+
+        // Ensure ID is passed for Actions
+        id: user.account_id
+    };
+});
+---
+
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold text-gray-800 font-garamond">User Management</h2>
+        <ManagementSearch placeholder="Search users..." currentQuery={query} />
+    </div>
+
+    {error && (
+            <div class="p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                {error}
+            </div>
+    )}
+
+    <ManagementTable
+            title="Registered Accounts"
+            columns={['Full Name', 'Email', 'Roles', 'Status']}
+            rows={tableRows}
+            idKey="account_id"
+            createLabel="Register User"
+            onCreateClick="openCreateUserModal()"
+            onEditClick="openEditUserModal"
+
+            currentPage={page}
+            totalPages={totalPages}
+            currentQuery={query}
+            baseUrl="?role=ADMIN&view=accounts"
+    />
+
+    <UserModal />
+</div>
+
+<script>
+    // @ts-ignore
+    window.deleteUser = function(id) {
+        if(confirm("Are you sure you want to deactivate this user?")) {
+            alert("Delete functionality pending for ID: " + id);
+        }
+    }
+</script>

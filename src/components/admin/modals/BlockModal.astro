@@ -1,0 +1,184 @@
+<div id="block-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 opacity-0">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col transform transition-all scale-95">
+        <div class="bg-plm-navy px-6 py-4 rounded-t-xl"><h3 id="block-modal-title" class="text-white font-bold">New Block</h3></div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="block-id" />
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase">Course <span class="text-red-500">*</span></label>
+                <select id="block-course" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Year Level <span class="text-red-500">*</span></label>
+                    <input id="block-year" type="number" min="1" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-plm-navy" />
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Block Number <span class="text-red-500">*</span></label>
+                    <input id="block-num" type="number" min="1" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-plm-navy" />
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-2 border-t border-gray-100 rounded-b-xl">
+            <button onclick="closeBlockModal()" class="px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded">Cancel</button>
+            <button onclick="saveBlock()" class="px-4 py-2 text-sm text-white bg-plm-navy font-bold rounded hover:bg-opacity-90">Save</button>
+        </div>
+    </div>
+</div>
+<script>
+    // DOM Elements with null safety
+    const modal = document.getElementById('block-modal');
+    const title = document.getElementById('block-modal-title');
+    const idIn = document.getElementById('block-id') as HTMLInputElement | null;
+    const courseIn = document.getElementById('block-course') as HTMLSelectElement | null;
+    const yearIn = document.getElementById('block-year') as HTMLInputElement | null;
+    const numIn = document.getElementById('block-num') as HTMLInputElement | null;
+
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+    function getToken() {
+        return document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))?.[2];
+    }
+
+    async function loadCourses() {
+        if(!courseIn) return;
+
+        // Avoid reload if already populated
+        if(courseIn.options.length > 1 && courseIn.options[1].value !== "") return;
+
+        try {
+            const token = getToken();
+            if(!token) return;
+
+            const res = await fetch(`${API_BASE}/api/admin/courses`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+
+            if(json.success && Array.isArray(json.data)) {
+                courseIn.innerHTML = '<option value="">-- Select Course --</option>';
+
+                json.data.forEach((c: any) => {
+                    const code = c.courseCode || c.course_code;
+                    const name = c.courseName || c.course_name;
+
+                    if (code) {
+                        const opt = document.createElement('option');
+                        opt.value = code;
+                        opt.textContent = `${code} - ${name || ''}`;
+                        courseIn.appendChild(opt);
+                    }
+                });
+            }
+        } catch(e) {
+            console.error("Failed to load courses", e);
+            courseIn.innerHTML = '<option value="">Error loading options</option>';
+        }
+    }
+
+    // @ts-ignore
+    window.openCreateBlockModal = async () => {
+        if(!modal || !idIn || !courseIn || !yearIn || !numIn) return;
+
+        await loadCourses();
+        if(title) title.textContent = "New Block";
+
+        idIn.value = "0";
+        courseIn.value = "";
+        yearIn.value = "1";
+        numIn.value = "1";
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div')?.classList.remove('scale-95');
+        }, 10);
+    };
+
+    // @ts-ignore
+    window.openEditBlockModal = async (data) => {
+        if(!modal || !idIn || !courseIn || !yearIn || !numIn) return;
+        if(!data) return;
+
+        await loadCourses();
+        if(title) title.textContent = "Edit Block";
+
+        // Robust Mapping (Entity vs DTO vs TableRow keys)
+        idIn.value = data.id || data.blockNo || data.block_no || "0";
+
+        // Course mapping
+        const courseCode = data.course || data.courseCode || data.course_code || "";
+        courseIn.value = typeof courseCode === 'object' ? courseCode.courseCode : courseCode;
+
+        yearIn.value = data.yearLevel || data.year_level || "1";
+        numIn.value = data.blockNo || data.blockNumber || data.block_number || "1"; // Note: blockNo in tableRow is the display number
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div')?.classList.remove('scale-95');
+        }, 10);
+    };
+
+    // @ts-ignore
+    window.closeBlockModal = () => {
+        if(!modal) return;
+        modal.classList.add('opacity-0');
+        modal.querySelector('div')?.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+
+    const toNullable = (val: string | undefined | null) => {
+        return (!val || val.trim() === "") ? null : val.trim();
+    };
+
+    // @ts-ignore
+    window.saveBlock = async () => {
+        if(!idIn || !courseIn || !yearIn || !numIn) return;
+
+        const token = getToken();
+        if(!token) { alert("Session expired"); return; }
+
+        const id = parseInt(idIn.value);
+        const isEdit = id > 0;
+
+        const url = isEdit
+            ? `${API_BASE}/api/admin/blocks/${id}`
+            : `${API_BASE}/api/admin/blocks`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const payload = {
+            block_no: isEdit ? id : null, // Backend expects null or ID
+            course_code: toNullable(courseIn.value),
+            year_level: parseInt(yearIn.value),
+            block_number: parseInt(numIn.value)
+        };
+
+        if(!payload.course_code || !payload.year_level || !payload.block_number) {
+            alert("All fields are required.");
+            return;
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                location.reload();
+            } else {
+                const json = await res.json();
+                alert("Failed: " + (json.message || "Unknown error"));
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Network error");
+        }
+    };
+</script>

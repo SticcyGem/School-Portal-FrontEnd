@@ -1,0 +1,397 @@
+<!-- Modal for Create/Edit User -->
+<div id="user-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 opacity-0">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh] transform transition-all scale-95">
+
+        <!-- HEADER -->
+        <div class="bg-plm-navy px-6 py-4 flex justify-between items-center shrink-0 rounded-t-xl">
+            <h3 id="modal-title" class="text-white font-bold text-lg">Register New User</h3>
+            <button id="btn-close-modal" class="text-white/70 hover:text-white transition-colors" aria-label="Close Modal">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- BODY -->
+        <div class="p-6 space-y-6 overflow-y-auto">
+            <input type="hidden" id="edit-user-id" />
+
+            <!-- BASIC INFO SECTION -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-bold text-plm-gold uppercase tracking-wider border-b border-gray-100 pb-1">Basic Information</h4>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="user-fname" class="block text-xs font-bold text-gray-500 uppercase mb-1">First Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="user-fname" autocomplete="given-name" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" required />
+                    </div>
+                    <div>
+                        <label for="user-mname" class="block text-xs font-bold text-gray-500 uppercase mb-1">Middle Name</label>
+                        <input type="text" id="user-mname" autocomplete="additional-name" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" />
+                    </div>
+                    <div>
+                        <label for="user-lname" class="block text-xs font-bold text-gray-500 uppercase mb-1">Last Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="user-lname" autocomplete="family-name" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" required />
+                    </div>
+                </div>
+
+                <div>
+                    <label for="user-email" class="block text-xs font-bold text-gray-500 uppercase mb-1">Email Address <span class="text-red-500">*</span></label>
+                    <input type="email" id="user-email" autocomplete="off" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" required />
+                </div>
+            </div>
+
+            <!-- SECURITY SECTION (New) -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-bold text-plm-gold uppercase tracking-wider border-b border-gray-100 pb-1">Security</h4>
+                <div>
+                    <label for="user-password" class="block text-xs font-bold text-gray-500 uppercase mb-1" id="password-label">Password <span class="text-red-500">*</span></label>
+                    <input type="password" id="user-password" autocomplete="new-password" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" placeholder="Enter password" />
+                    <p class="text-[10px] text-gray-400 mt-1 italic hidden" id="password-hint">Leave blank to keep existing password.</p>
+                </div>
+            </div>
+
+            <!-- ACCOUNT SETTINGS -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-bold text-plm-gold uppercase tracking-wider border-b border-gray-100 pb-1">Account Configuration</h4>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="user-role" class="block text-xs font-bold text-gray-500 uppercase mb-1">Primary Role <span class="text-red-500">*</span></label>
+                        <select id="user-role" class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:ring-1 focus:ring-plm-navy outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed">
+                            <option value="STUDENT">Student</option>
+                            <option value="PROFESSOR">Professor</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                        <p class="text-[10px] text-gray-400 mt-1 italic" id="role-hint">Determines required fields.</p>
+                    </div>
+                    <div>
+                        <label for="user-status" class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
+                        <select id="user-status" class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:ring-1 focus:ring-plm-navy outline-none">
+                            <option value="ACTIVE">Active</option>
+                            <option value="INACTIVE">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROLE SPECIFIC FIELDS: STUDENT -->
+            <div id="student-fields" class="space-y-4 hidden animate-fade-in">
+                <h4 class="text-sm font-bold text-plm-navy uppercase tracking-wider border-b border-gray-100 pb-1">Student Details</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="student-no" class="block text-xs font-bold text-gray-500 uppercase mb-1">Student No.</label>
+                        <input type="number" id="student-no" placeholder="Auto-generated if empty" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed" />
+                    </div>
+                    <div>
+                        <label for="course-code" class="block text-xs font-bold text-gray-500 uppercase mb-1">Course Code <span class="text-red-500">*</span></label>
+                        <input type="text" id="course-code" placeholder="e.g. BSCS" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none" />
+                    </div>
+                    <div>
+                        <label for="student-type" class="block text-xs font-bold text-gray-500 uppercase mb-1">Student Type</label>
+                        <select id="student-type" class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:ring-1 focus:ring-plm-navy outline-none">
+                            <option value="REGULAR">Regular</option>
+                            <option value="IRREGULAR">Irregular</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="education-level" class="block text-xs font-bold text-gray-500 uppercase mb-1">Education Level</label>
+                        <select id="education-level" class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:ring-1 focus:ring-plm-navy outline-none">
+                            <option value="UNDERGRADUATE">Undergraduate</option>
+                            <option value="GRADUATE">Graduate</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROLE SPECIFIC FIELDS: PROFESSOR -->
+            <div id="professor-fields" class="space-y-4 hidden animate-fade-in">
+                <h4 class="text-sm font-bold text-plm-navy uppercase tracking-wider border-b border-gray-100 pb-1">Faculty Details</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="professor-id" class="block text-xs font-bold text-gray-500 uppercase mb-1">Faculty ID</label>
+                        <input type="text" id="professor-id" placeholder="Auto-generated if empty" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-plm-navy outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed" />
+                    </div>
+                    <div>
+                        <label for="employee-type" class="block text-xs font-bold text-gray-500 uppercase mb-1">Employment Type <span class="text-red-500">*</span></label>
+                        <select id="employee-type" class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:ring-1 focus:ring-plm-navy outline-none">
+                            <option value="FULL_TIME">Full Time</option>
+                            <option value="PART_TIME">Part Time</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100 shrink-0 rounded-b-xl">
+            <button id="btn-cancel-modal" class="px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-200 rounded transition-colors">Cancel</button>
+            <button id="btn-save-user" class="px-6 py-2 text-sm text-white bg-plm-navy font-bold rounded shadow hover:bg-opacity-90 transition-all flex items-center justify-center min-w-[100px]">
+                <span id="btn-text">Save Changes</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const userModal = document.getElementById('user-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const roleHint = document.getElementById('role-hint');
+    const passwordHint = document.getElementById('password-hint');
+    const passwordLabel = document.getElementById('password-label');
+
+    // Inputs
+    const userIdInput = document.getElementById('edit-user-id') as HTMLInputElement;
+    const fNameInput = document.getElementById('user-fname') as HTMLInputElement;
+    const mNameInput = document.getElementById('user-mname') as HTMLInputElement;
+    const lNameInput = document.getElementById('user-lname') as HTMLInputElement;
+    const emailInput = document.getElementById('user-email') as HTMLInputElement;
+    const passwordInput = document.getElementById('user-password') as HTMLInputElement;
+
+    const roleInput = document.getElementById('user-role') as HTMLSelectElement;
+    const statusInput = document.getElementById('user-status') as HTMLSelectElement;
+
+    const studentFields = document.getElementById('student-fields');
+    const studentNoInput = document.getElementById('student-no') as HTMLInputElement;
+    const courseCodeInput = document.getElementById('course-code') as HTMLInputElement;
+    const studentTypeInput = document.getElementById('student-type') as HTMLSelectElement;
+    const eduLevelInput = document.getElementById('education-level') as HTMLSelectElement;
+
+    const professorFields = document.getElementById('professor-fields');
+    const professorIdInput = document.getElementById('professor-id') as HTMLInputElement;
+    const employeeTypeInput = document.getElementById('employee-type') as HTMLSelectElement;
+
+    function updateFieldVisibility() {
+        if (!roleInput) return;
+        const role = roleInput.value;
+
+        if (studentFields) studentFields.classList.add('hidden');
+        if (professorFields) professorFields.classList.add('hidden');
+
+        if (role === 'STUDENT' && studentFields) {
+            studentFields.classList.remove('hidden');
+        } else if (role === 'PROFESSOR' && professorFields) {
+            professorFields.classList.remove('hidden');
+        }
+    }
+
+    if (roleInput) {
+        roleInput.addEventListener('change', updateFieldVisibility);
+    }
+
+    // @ts-ignore
+    window.openCreateUserModal = function() {
+        if(!userModal) return;
+        if(modalTitle) modalTitle.textContent = "Register New User";
+
+        // Reset inputs
+        if(userIdInput) userIdInput.value = "";
+        if(fNameInput) fNameInput.value = "";
+        if(mNameInput) mNameInput.value = "";
+        if(lNameInput) lNameInput.value = "";
+        if(emailInput) emailInput.value = "";
+        if(passwordInput) passwordInput.value = "";
+
+        // Password UX for Create
+        if(passwordHint) passwordHint.classList.add('hidden');
+        if(passwordLabel) passwordLabel.innerHTML = 'Password <span class="text-red-500">*</span>';
+
+        if(roleInput) {
+            roleInput.value = "STUDENT";
+            roleInput.disabled = false;
+        }
+        if(statusInput) statusInput.value = "ACTIVE";
+
+        if(studentNoInput) {
+            studentNoInput.value = "";
+            studentNoInput.disabled = false;
+            studentNoInput.placeholder = "Auto-generated if empty";
+        }
+        if(professorIdInput) {
+            professorIdInput.value = "";
+            professorIdInput.disabled = false;
+            professorIdInput.placeholder = "Auto-generated if empty";
+        }
+        if(courseCodeInput) courseCodeInput.value = "";
+
+        updateFieldVisibility();
+
+        userModal.classList.remove('hidden');
+        setTimeout(() => { userModal.classList.remove('opacity-0'); userModal.querySelector('div')?.classList.remove('scale-95'); }, 10);
+    };
+
+    // @ts-ignore
+    window.openEditUserModal = function(user) {
+        if(!userModal) return;
+        if(modalTitle) modalTitle.textContent = "Edit User Details";
+
+        // Common Data
+        if(userIdInput) userIdInput.value = user.account_id || "";
+        if(fNameInput) fNameInput.value = user.first_name || "";
+        if(mNameInput) mNameInput.value = user.middle_name || "";
+        if(lNameInput) lNameInput.value = user.last_name || "";
+        if(emailInput) emailInput.value = user.email || "";
+        if(statusInput) statusInput.value = user.status || "ACTIVE";
+
+        // Password UX for Edit (Optional Reset)
+        if(passwordInput) passwordInput.value = "";
+        if(passwordHint) passwordHint.classList.remove('hidden');
+        if(passwordLabel) passwordLabel.innerHTML = 'Reset Password <span class="text-gray-400 font-normal">(Optional)</span>';
+
+        const primaryRole = (user.roles && user.roles.length > 0) ? user.roles[0] : "STUDENT";
+
+        if(roleInput) {
+            roleInput.value = primaryRole;
+            roleInput.disabled = true;
+        }
+
+        if(primaryRole === 'STUDENT') {
+            if(studentNoInput) {
+                const sno = user.student_no || "";
+                studentNoInput.value = sno;
+                studentNoInput.disabled = true;
+                if(!sno) studentNoInput.placeholder = "No Student No Assigned";
+            }
+            if(courseCodeInput) courseCodeInput.value = user.course_code || "";
+        } else if (primaryRole === 'PROFESSOR') {
+            if(professorIdInput) {
+                const pid = user.professor_id || "";
+                professorIdInput.value = pid;
+                professorIdInput.disabled = true;
+                if(!pid) professorIdInput.placeholder = "No Faculty ID Assigned";
+            }
+        }
+
+        updateFieldVisibility();
+
+        userModal.classList.remove('hidden');
+        setTimeout(() => { userModal.classList.remove('opacity-0'); userModal.querySelector('div')?.classList.remove('scale-95'); }, 10);
+    };
+
+    function getCookie(name: string) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        if (match) return match[2];
+        return null;
+    }
+
+    async function saveUser() {
+        const id = userIdInput?.value;
+        const isEdit = !!id;
+        const role = roleInput?.value;
+        const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:8080";
+        const token = getCookie('jwt_token');
+
+        if(!token) { alert("Session expired"); return; }
+
+        // --- VALIDATION ---
+        if (!fNameInput?.value || !lNameInput?.value || !emailInput?.value) {
+            alert("Please fill in all required fields (Name, Email).");
+            return;
+        }
+
+        if (!isEdit && !passwordInput?.value) {
+            alert("Password is required for new users.");
+            return;
+        }
+
+        const btn = document.getElementById('btn-save-user') as HTMLButtonElement;
+        const btnText = document.getElementById('btn-text');
+        if(btn) btn.disabled = true;
+        if(btnText) btnText.textContent = "Saving...";
+
+        try {
+            if (isEdit) {
+                // 1. UPDATE USER DETAILS
+                const payload = {
+                    first_name: fNameInput.value,
+                    middle_name: mNameInput.value,
+                    last_name: lNameInput.value,
+                    email: emailInput.value,
+                    status: statusInput.value
+                };
+
+                await fetch(`${API_BASE}/api/admin/users/${id}`, {
+                    method: "PUT",
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+
+                // 2. PASSWORD RESET (Separate Call if filled)
+                if (passwordInput && passwordInput.value.trim() !== "") {
+                    console.log("Resetting password...");
+                    const pwPayload = { new_password: passwordInput.value };
+                    await fetch(`${API_BASE}/api/admin/users/${id}/password`, {
+                        method: "PUT",
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(pwPayload)
+                    });
+                }
+
+                alert("User updated successfully.");
+                location.reload();
+
+            } else {
+                // CREATE USER
+                let endpoint = "";
+                const payload = {
+                    email: emailInput.value,
+                    password: passwordInput.value,
+                    first_name: fNameInput.value,
+                    middle_name: mNameInput.value,
+                    last_name: lNameInput.value,
+                };
+
+                if (role === "STUDENT") {
+                    endpoint = "/api/admin/register/student";
+                    Object.assign(payload, {
+                        student_no: studentNoInput?.value ? parseInt(studentNoInput.value) : null,
+                        education_level: eduLevelInput?.value,
+                        student_type: studentTypeInput?.value,
+                        course_code: courseCodeInput?.value
+                    });
+                } else if (role === "PROFESSOR") {
+                    endpoint = "/api/admin/register/professor";
+                    Object.assign(payload, {
+                        professor_id: professorIdInput?.value || null,
+                        employee_type: employeeTypeInput?.value
+                    });
+                } else {
+                    endpoint = "/api/admin/register";
+                }
+
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+
+                const json = await res.json();
+                if (json.success) {
+                    alert("User created successfully.");
+                    location.reload();
+                } else {
+                    alert("Error: " + (json.message || "Failed to create user"));
+                }
+            }
+
+        } catch (e) {
+            console.error(e);
+            alert("Network error occurred.");
+        } finally {
+            if(btn) btn.disabled = false;
+            if(btnText) btnText.textContent = "Save Changes";
+        }
+    }
+
+    function closeUserModal() {
+        if(userModal) {
+            userModal.classList.add('opacity-0');
+            userModal.querySelector('div')?.classList.add('scale-95');
+            setTimeout(() => userModal.classList.add('hidden'), 300);
+        }
+    }
+
+    document.getElementById('btn-close-modal')?.addEventListener('click', closeUserModal);
+    document.getElementById('btn-cancel-modal')?.addEventListener('click', closeUserModal);
+    document.getElementById('btn-save-user')?.addEventListener('click', saveUser);
+
+</script>
